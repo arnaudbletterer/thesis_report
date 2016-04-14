@@ -261,10 +261,33 @@ Cela signifie que la puissance et l'énergie du signal augmente en même temps q
 Ce type de bruit connait un fort intérêt en Informatique Graphique, étant donné que son utilisation permet d'éviter des effets d'aliasing lors de différents rendus, lorsque la densité de points projetés sur l'écran devient trop importante.
 La donnée étant sous-échantillonnée, il est fort courant de se retrouver avec des effets de "repliement de spectre", donnant l'impression de motifs dessinés à l'écran, bien que la donnée ne contienne aucun dessin de ce genre.
 
-Ce problème de repliement de spectre est du au non respect du théorème d'échantillonnage de Nyquist Shannon.
+Ce problème de repliement de spectre est dû au non respect du théorème d'échantillonnage de Nyquist Shannon.
 
+\chapter{Reconstruction de surface}
 
+Etant donné que les processeurs graphiques sont optimisés pour le traitement de géométrie discrète sous la forme de triangles, il est naturel de se tourner vers ce genre de représentation lorsque le nombre de primitives à visualiser devient important.
 
+Une des méthodes les plus utilisées pour reconstruire la topologie sous-jacente à un ensemble d'échantillons est ce qu'on appelle les "diagrammes de Voronoi".
+
+\section{Diagramme de Voronoï}
+
+\subsection{Diagramme de Voronoï basique}
+
+Un diagramme de Voronoï est une structure de données représentant une partition d'un espace de dimension $d$ $E^d$.
+A partir d'un ensemble de $k$ sites, l'idée est de trouver pour chaque site la zone de l'espace la plus proche de ce site.
+Concrètement, il s'agit de définir, pour chaque point de l'espace $p$ de quel site $k$ il est le plus proche :
+
+\begin{equation}
+  \{p \in E^d \mid d(k_i, p) < d(k_j, p), \forall j \neq i\},
+\end{equation}
+
+où $d(k,p)$ correspond à la distance entre le site $k$ et le point $p$. Cette fonction de distance peut par exemple correspondre à la distance euclidienne (norme l2) :
+
+\begin{equation}
+  \norm{k-p} = \sqrt{\sum_i^d (k_i-p_i)^2}
+\end{equation}
+
+\subsection{Diagramme de Voronoï pondéré}
 
 \bibliographystyle{plain}
 \bibliography{bibliography.bib}
