@@ -203,6 +203,32 @@ En remplaçant \eqref{eq:diff_img} dans \eqref{eq:mse_geom}, on obtient :
 
 De cette manière, il est possible de mesurer l'erreur géométrique directement à partir des valeurs de profondeurs dans les cartes de profondeur.
 
+\subsection{Calcul d'erreur géométrique à partir de valeurs d'intensité}
+
+Soit $a = (x,y,z)$ un point de l'espace et $b = (wx,wy,wz,w)$ sa représentation en 3D homogène. On peut écrire la norme $L^2$ de $a$ à partir de $b$ :
+
+\begin{equation}
+	\norm{a}_2^2 = \frac{\norm{b}_2^2}{w^2}-1.
+\end{equation}
+
+Etant donné que $b$ peut être exprimé comme le plongement d'un pixel d'une carte de profondeur grâce à la matrice de plongement $M^{-1}$ associée à cette carte de profondeur :
+
+\begin{equation}
+	b = M^{-1}c,
+\end{equation}
+
+on peut exprimer la norme $L^2$ de $a$ à partir des valeurs de $c$ :
+
+\begin{equation}
+	\norm{a}_2^2 = \frac{\norm{M^{-1}c}^2}{w^2}-1,
+\end{equation}
+
+où $w$ est le résultat du produit scalaire entre la dernière ligne de $M^{-1}$ et du vecteur $c$ :
+
+\begin{equation}
+	w = M_4^{-1}\cdot c.
+\end{equation}
+
 \chapter{Visualisation}
 
 \section{A partir de cartes de profondeur}
