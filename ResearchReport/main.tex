@@ -1,0 +1,236 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% The Legrand Orange Book
+% LaTeX Template
+% Version 2.1.1 (14/2/16)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% Original author:
+% Mathias Legrand (legrand.mathias@gmail.com) with modifications by:
+% Vel (vel@latextemplates.com)
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+% Compiling this template:
+% This template uses biber for its bibliography and makeindex for its index.
+% When you first open the template, compile it from the command line with the 
+% commands below to make sure your LaTeX distribution is configured correctly:
+%
+% 1) pdflatex main
+% 2) makeindex main.idx -s StyleInd.ist
+% 3) biber main
+% 4) pdflatex main x 2
+%
+% After this, when you wish to update the bibliography/index use the appropriate
+% command above and make sure to compile with pdflatex several times 
+% afterwards to propagate your changes to the document.
+%
+% This template also uses a number of packages which may need to be
+% updated to the newest versions for the template to compile. It is strongly
+% recommended you update your LaTeX distribution if you have any
+% compilation errors.
+%
+% Important note:
+% Chapter heading images should have a 2:1 width:height ratio,
+% e.g. 920px width and 460px height.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass[11pt,fleqn]{book} % Default font size and left-justified equations
+
+%----------------------------------------------------------------------------------------
+
+\input{structure} % Insert the commands.tex file which contains the majority of the structure behind the template
+
+\newcommand{\arnaud}[1]{\textcolor{red}{$<$ #1 $>$}}
+
+\begin{document}
+
+%----------------------------------------------------------------------------------------
+%	TITLE PAGE
+%----------------------------------------------------------------------------------------
+
+\begingroup
+\thispagestyle{empty}
+\begin{tikzpicture}[remember picture,overlay]
+\coordinate [below=12cm] (midpoint) at (current page.north);
+\node at (current page.north west)
+{\begin{tikzpicture}[remember picture,overlay]
+% \node[anchor=north west,inner sep=0pt] at (0,0) {\includegraphics[width=\paperwidth]{background}}; % Background image
+\draw[anchor=north] (midpoint) node [fill=ocre!30!white,fill opacity=0.6,text opacity=1,inner sep=1cm]{\Huge\centering\bfseries\sffamily\parbox[c][][t]{\paperwidth}{\centering Research report\\[15pt] % Book title
+% {\Large A Profound Subtitle}\\[20pt] % Subtitle
+{\Large Arnaud Bletterer}}}; % Author name
+\end{tikzpicture}};
+\end{tikzpicture}
+\vfill
+\endgroup
+
+%----------------------------------------------------------------------------------------
+%	COPYRIGHT PAGE
+%----------------------------------------------------------------------------------------
+
+\newpage
+~\vfill
+\thispagestyle{empty}
+
+%----------------------------------------------------------------------------------------
+%	TABLE OF CONTENTS
+%----------------------------------------------------------------------------------------
+
+\usechapterimagefalse % If you don't want to include a chapter image, use this to toggle images off - it can be enabled later with \usechapterimagetrue
+
+\chapterimage{chapter_head_1.pdf} % Table of contents heading image
+
+\pagestyle{empty} % No headers
+
+\tableofcontents % Print the table of contents itself
+
+\cleardoublepage % Forces the first chapter to start on an odd page so it's on the right
+
+\pagestyle{fancy} % Print headers again
+
+%----------------------------------------------------------------------------------------
+%	CHAPTER 2
+%----------------------------------------------------------------------------------------
+
+\chapter{Semi-regular Surface Reconstruction}
+
+This chapter explains a new method in surface reconstruction, based on the original data coming from 3D scanners, namely depthmaps.
+Depthmaps are 2D grayscale images, representing the distance from points to the scene. They are a discrete local parameterization of the scene acquired using the scanners.
+
+\section{Depthmaps reprojection}
+There are many different methods to recover 3D positions from depthmaps, depending on the acquisition devices.
+
+\subsection{LiDAR scanners}
+For LiDAR scanners for example, it is common to use spherical coordinates to store values in the depthmaps.
+Spherical coordinates \cite{Wal67} are a coordinate system used to define positions over a sphere. 
+They define $\theta$ to be the azimuthal angle $0 \leq \theta < 2\pi$ from the x-axis, $\phi$ to be polar angle (zenith angle) $0 \leq \phi \leq \pi$ and $r$ to be the distance (radius) from a point to the origin $r \in [0;+\infty)$.
+
+They are obtained from Cartesian coordinates by the following relations : 
+
+\begin{equation}
+\label{eq:cartesian_to_spherical}
+	r = \sqrt{x^2 + y^2 + z^2} \\
+	\theta = \tan^{-1}(\frac{y}{x})\\
+	\phi = \cos^{-1}(\frac{z}{r}),
+\end{equation}
+
+and Cartesian coordinates can be recovered from those using : 
+
+\begin{equation}
+\label{eq:spherical_to_cartesian}
+	x = r\cos\theta\sin\phi\\
+	y = r\sin\theta\sin\phi\\
+	z = r\cos\phi
+\end{equation}
+
+In the depthmap, the intensity stored for each pixel is the value of $r$. Knowing $\Delta\theta$ and $\Delta\phi$ (representing the difference of respectively azimuthal and polar angles between two consecutive points), one can recover $\theta$ and $\phi$ for each pixel of the depthmap, taking in consideration the structure of the depthmaps (2D matrices). 
+Using Equation\eqref{eq:spherical_to_cartesian}, it is possible to recover 3D positions of points from intensity values contained in the depthmaps.
+
+\section{Border marking, labeling and routing}
+\label{sec:border_marking}
+
+This link between depth values and 3D coordinates motivated us using depthmaps as a parameterization domain to apply algorithm on point clouds, considering the implicit connectivity between pixels to do local computations requesting the consideration of neighboring points.
+
+If most of the time it is correct to consider that neighboring pixels in a depthmap are also neighbors on the surface (with respect to the sampling density of the acquisition), it is not the case along depth discontinuities.
+Since an acquisition is done from a specific position and orientation, they can only represent visible points from that specific point of view. Thus many surface areas can be occluded, and different surface areas could be considered touching each other in the depthmap.
+
+To avoid this, we present a method to mark the borders, identify each of them uniquely and store the path from the beginning until the end of each border.
+
+\subsection{Border marking}
+First, we mark all the pixels of the depthmap that do not fulfill a local depth-discontinuity condition. We consider a depth-discontinuity as being an important change of depth in at least one direction (horizontal, vertical or diagonal).
+
+During that step, we are defining how points would be triangulated if a mesh was to be constructed between neighboring pixels over the whole depthmap. For this, we consider an arbitrary connectivity pattern, connecting one pixel to 6 of its neighbors, and will use that pattern to consider the possible neighbors of a point \arnaud{ADD FIGURE CONNECTIVITY}. This pattern will be used during the following neighborhood considerations.
+
+We will mark both pixels along the border, meaning that those borders are 
+
+For each pixel $p$, we search to know if there a high intensity variation with respect to its neighborhood. If this is the case, it means that the pixels do not belong the same surface area, and then need to be separated for the further processings.
+We consider that each pixel has at least one neighbor in each direction belonging to the same surface area (low intensity variation). Knowing that, we evaluate how much difference there is between the 2 neighbors in each direction (top and bottom, left and right, bottom-right and top-left.
+For this, we compute a mean intensity variation (MIV) per direction, by dividing the intensity of the current pixel with the one of each neighbor belonging to that direction. We consider that if the variation of intensity between $p$ and one of his neighbor is over the associated MIV (+ or - $k$\%), then there exists a border between $p$ and this specific neighbor. In all of our experiments we used $k = 3$ and found it to give good results.
+
+Since this is a highly parallelizable algorithm, we implemented it using GPGPU methods. This makes the computation of the borders really fast.
+
+\subsection{Border labeling and routing}
+Now that borders have been indentified, we need to label them in order to be able to consider them independently. 
+
+Each border is represented as a list, characterizing the path from pixel to pixel, from the beginning until the end of the border.
+
+We decide to use a region-growing process. Starting from a pixel that has been marked as a border, we try to find the next pixel defining the same border. When we consider the global triangulation over the depthmap, we search the next vertex along the border of the triangulation, considering oriented faces.
+When this vertex has been found, it is added to the current border list, and being processed, to find the next pixel of the border after him.
+When there is no more pixel than can be added to the current border, the border is considered as complete.
+
+At the initialization, every pixel marked as a border is added to a list. Until the list is not empty the first pixel is treated and removed from the list. If the pixel has already been labeled, then it is ignored, and the next one is considered instead. If the pixel isn't already labeled it is used as the starting pixel from the algorithm described above.
+
+\section{Poisson-disk sampling of the depthmap}
+\label{sec:poisson_sampling}
+
+In semi-regular triangle remeshing, to construct a semi-regular mesh from an irregular one, one method consists in constructing a base mesh, i.e. a low resolution version of the irregular one and subdividing it recursively (and projecting the generated vertices onto the original surface) \cite{PRS15}. Our work is inspired by those methods, to construct the base mesh by sampling the depthmap (which is a discrete representation of the acquired surface).
+
+To obtain a good distribution of the base vertices over the depthmap, we use a poisson-disk sampling, as it has been shown to be one of the best sampling patterns for many applications. 
+We use a dart-throwing approach to choose the samples, combined with an region-growing process through Dijkstra's algorithm \cite{Dij59} to compute the disks areas.
+
+To preserve the holes that have been detected, we first sample each border. We take 3 samples per border, this ensures that every hole (which is delimited by a border, by construction) will be preserved during the generation of the initial triangulation.
+
+Then, we compute a connectivity graph over the depthmap. Each pixel can have up to 6 neighbors (with respect to the triangulation pattern chosen at the beginning). An egde exists between two pixels, if they are not separated by a border.
+
+\subsection{Uniform sampling}
+This method uses the 3D coordinates of points (which are reprojected pixels) and weights each edge using the euclidean distance between both points.
+By using Dijkstra's algorithm, we can approximate geodesic distances. In other words, this methods consider that poisson disks represents patches on the surface acquired.
+The sampling is uniform in the sense that every point 
+
+\subsection{Density adaptive sampling}
+Depthmaps can represent scenes having a really huge difference in sampling density, depending on the distance of a surface area to the scanner. 
+For example, on the (Figure \arnaud{ADD FIGURE DIFFERENCE OF SAMPLING}) points in the green area have a sampling density of \arnaud{sampling density value w.r.t Bbox} and the pixels in the blue area have a sampling density of \arnaud{sampling density value w.r.t Bbox}. It can be interesting to conserve that difference of density when choosing the samples.
+
+Instead of sampling a point cloud uniformly in 3D, we suggest to take the local sampling density into account. In other words, rather than computing disks with constant radius, we constrain each disk to contain a constant number of points.
+Interestingly, this can be easily be obtained by sampling the depthmap without considering 3D geodesic distances, i.e. doing a classical poisson-disk sampling on an discretized planar domain.
+
+\section{Voronoi diagram generation and Lloyd relaxation}
+\label{sec:lloyd_relaxation}
+
+In order to even the sites positions, we apply a Lloyd relaxation scheme based on 3D geodesic distances, using the connectivity of the depthmap.
+This algorithm is decomposed into two steps : 
+\begin{itemize}
+	\item Computing a voronoi diagram, determining for each site $s$ the closest points from $s$ to any other site.
+	\item Moving the position of the sites
+\end{itemize}
+
+Those steps are repeated until the sites stop moving (in practice, the process is stopped when the mean sites displacement is below a given threshold).
+
+\subsection{Voronoi diagram generation}
+To compute the Voronoi diagram, we use a discrete approach, through the multi-sources Dijkstra's algorithm (MSSP) \cite{Dij59}.
+We adapted a GPU implementation from the work of \cite{PPA16} to include the use of depthmaps.
+
+This method works as a recursive process. 
+Each site will grow a region to all the pixels in their 1-ring neighborhood. If a pixel has not already been visited yet, then it is considered as belonging
+
+\subsection{Lloyd relaxation}
+Now that each valid pixel of the depthmap is included in a Voronoi cell, sites are going to be moved, in order for them to be more evenly spaced locally.
+Each Voronoi cell can be in two different configurations : 
+\begin{itemize}
+	\item A cell doesn't touch a border. This means that no pixel in the Voronoi cell touches the 
+\end{itemize}
+
+\section{Surface triangulation}
+\label{sec:surface_triangulation}
+
+\section{Surface subdivision}
+\label{sec:surface_subdivision}
+
+%----------------------------------------------------------------------------------------
+%	BIBLIOGRAPHY
+%----------------------------------------------------------------------------------------
+\bibliographystyle{alpha}
+\bibliography{bibliography}
+
+\printindex
+
+%----------------------------------------------------------------------------------------
+
+\end{document}
