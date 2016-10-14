@@ -154,7 +154,7 @@ For each pixel $p$, we search to know if there a high intensity variation with r
 We consider that each pixel has at least one neighbor in each direction belonging to the same surface area (low intensity variation). Knowing that, we evaluate how much difference there is between the 2 neighbors in each direction (top and bottom, left and right, bottom-right and top-left.
 For this, we compute a mean intensity variation (MIV) per direction, by dividing the intensity of the current pixel with the one of each neighbor belonging to that direction. We consider that if the variation of intensity between $p$ and one of his neighbor is over the associated MIV (+ or - $k$\%), then there exists a border between $p$ and this specific neighbor. In all of our experiments we used $k = 3$ and found it to give good results.
 
-Since this is a highly parallelizable algorithm, we implemented it using GPGPU methods. This makes the computation of the borders really fast.
+Since this is a highly parallelizable algorithm (each operation is executed indepently for each pixel), we implemented it using GPGPU methods. This makes the computation of the borders really fast.
 
 \subsection{Border labeling and routing}
 Now that borders have been indentified, we need to label them in order to be able to consider them independently. 
@@ -177,19 +177,24 @@ We use a dart-throwing approach to choose the samples, combined with an region-g
 
 To preserve the holes that have been detected, we first sample each border. We take 3 samples per border, this ensures that every hole (which is delimited by a border, by construction) will be preserved during the generation of the initial triangulation.
 
-Then, we compute a connectivity graph over the depthmap. Each pixel can have up to 6 neighbors (with respect to the triangulation pattern chosen at the beginning). An egde exists between two pixels, if they are not separated by a border.
+Then, we compute a connectivity graph over the depthmap. Each pixel can have up to 6 neighbors (with respect to the triangulation pattern chosen at the beginning).
+An egde exists between two pixels if they are not separated by a border.
 
 \subsection{Uniform sampling}
 This method uses the 3D coordinates of points (which are reprojected pixels) and weights each edge using the euclidean distance between both points.
-By using Dijkstra's algorithm, we can approximate geodesic distances. In other words, this methods consider that poisson disks represents patches on the surface acquired.
-The sampling is uniform in the sense that every point 
+By using Dijkstra's algorithm, we can approximate geodesic distances. 
+By using this method, we consider Poisson disks (surface patches to be more precise) to have an equal area in 3D.
+
+\arnaud{INSERT IMAGE UNIFORM SAMPLING}
 
 \subsection{Density adaptive sampling}
 Depthmaps can represent scenes having a really huge difference in sampling density, depending on the distance of a surface area to the scanner. 
-For example, on the (Figure \arnaud{ADD FIGURE DIFFERENCE OF SAMPLING}) points in the green area have a sampling density of \arnaud{sampling density value w.r.t Bbox} and the pixels in the blue area have a sampling density of \arnaud{sampling density value w.r.t Bbox}. It can be interesting to conserve that difference of density when choosing the samples.
+For example, on the (Figure \arnaud{ADD FIGURE DIFFERENCE OF SAMPLING}) points in the green area have a sampling density of \arnaud{sampling density value w.r.t Bbox} and the pixels in the blue area have a sampling density of \arnaud{sampling density value w.r.t Bbox}. It can be interesting to conserve that difference of density when choosing the samples, in order to keep the precision of the original acquisition, when fine structures have been acquired.
 
 Instead of sampling a point cloud uniformly in 3D, we suggest to take the local sampling density into account. In other words, rather than computing disks with constant radius, we constrain each disk to contain a constant number of points.
-Interestingly, this can be easily be obtained by sampling the depthmap without considering 3D geodesic distances, i.e. doing a classical poisson-disk sampling on an discretized planar domain.
+Interestingly, this can easily be obtained by sampling the depthmap without considering 3D geodesic distances, i.e. doing a classical poisson-disk sampling on an discretized planar domain.
+
+\arnaud{INSERT IMAGE DENSITY ADAPTIVE SAMPLING}
 
 \section{Voronoi diagram generation and Lloyd relaxation}
 \label{sec:lloyd_relaxation}
@@ -197,28 +202,32 @@ Interestingly, this can be easily be obtained by sampling the depthmap without c
 In order to even the sites positions, we apply a Lloyd relaxation scheme based on 3D geodesic distances, using the connectivity of the depthmap.
 This algorithm is decomposed into two steps : 
 \begin{itemize}
-	\item Computing a voronoi diagram, determining for each site $s$ the closest points from $s$ to any other site.
-	\item Moving the position of the sites
+	\item Computing a voronoi diagram, determining for each site $s_i$ the closest points from $s_i$ to any other site.
+	\item Moving the position of each site $s$
 \end{itemize}
 
-Those steps are repeated until the sites stop moving (in practice, the process is stopped when the mean sites displacement is below a given threshold).
+Those steps are repeated until the sites stop moving (in practice, the process is stopped when the mean displacement is below a given threshold).
 
 \subsection{Voronoi diagram generation}
 To compute the Voronoi diagram, we use a discrete approach, through the multi-sources Dijkstra's algorithm (MSSP) \cite{Dij59}.
 We adapted a GPU implementation from the work of \cite{PPA16} to include the use of depthmaps.
 
 This method works as a recursive process. 
-Each site will grow a region to all the pixels in their 1-ring neighborhood. If a pixel has not already been visited yet, then it is considered as belonging
+At the beginning, each site transmits its ownership to all the pixels in their 1-ring neighborhood.
 
 \subsection{Lloyd relaxation}
 Now that each valid pixel of the depthmap is included in a Voronoi cell, sites are going to be moved, in order for them to be more evenly spaced locally.
 Each Voronoi cell can be in two different configurations : 
 \begin{itemize}
-	\item A cell doesn't touch a border. This means that no pixel in the Voronoi cell touches the 
+	\item \textbf{the cell doesn't touch a border}. This means that no pixel being part of the Voronoi cell belongs to the border.
+	In this configuration, the cell's site is moved to the centroid of its cell
+	\item \textbf{the cell touches a border}. This means that at least one pixel being part of the Voronoi cell belongs to the border.
+	In this configuration, the cell's site is moved to the closest pixel belonging to the border to the centroid of its cell (in the least squares sense).
 \end{itemize}
 
 \section{Surface triangulation}
 \label{sec:surface_triangulation}
+
 
 \section{Surface subdivision}
 \label{sec:surface_subdivision}
