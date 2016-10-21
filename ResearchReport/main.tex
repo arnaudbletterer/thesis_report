@@ -102,15 +102,17 @@
 \chapter{Semi-regular Surface Reconstruction}
 
 This chapter explains a new method in surface reconstruction, based on the original data coming from 3D scanners, namely depthmaps.
+
+\section{Depthmaps}
 Depthmaps are 2D grayscale images, representing the distance from points to the scene. They are a discrete local parameterization of the scene acquired using the scanners.
 
-\section{Depthmaps reprojection}
+\subsection{Depthmaps reprojection}
 There are many different methods to recover 3D positions from depthmaps, depending on the acquisition devices.
 
-\subsection{LiDAR scanners}
+\subsubsection{LiDAR scanners}
 For LiDAR scanners for example, it is common to use spherical coordinates to store values in the depthmaps.
 Spherical coordinates \cite{Wal67} are a coordinate system used to define positions over a sphere. 
-They define $\theta$ to be the azimuthal angle $0 \leq \theta < 2\pi$ from the x-axis, $\phi$ to be polar angle (zenith angle) $0 \leq \phi \leq \pi$ and $r$ to be the distance (radius) from a point to the origin $r \in [0;+\infty)$.
+They define $\theta$ to be the azimuthal angle $0 \leq \theta < 2\pi$ from the x-axis, $\phi$ to be polar angle (zenithal\textbf{•} angle) $0 \leq \phi \leq \pi$ and $r$ to be the distance (radius) from a point to the origin $r \in [0;+\infty)$.
 
 They are obtained from Cartesian coordinates by the following relations : 
 
