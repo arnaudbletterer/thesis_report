@@ -101,7 +101,7 @@
 
 \chapter{Semi-regular Surface Reconstruction}
 
-This chapter explains a new method in surface reconstruction, based on the original data coming from 3D scanners, namely depthmaps.
+This chapter explains a new method in surface reconstruction, based on the original data coming from many 3D scanners, namely depthmaps.
 
 \section{Depthmaps}
 Depthmaps are 2D grayscale images, representing the distance from points to the scene. They are a discrete local parameterization of the scene acquired using the scanners.
@@ -112,7 +112,7 @@ There are many different methods to recover 3D positions from depthmaps, dependi
 \subsubsection{LiDAR scanners}
 For LiDAR scanners for example, it is common to use spherical coordinates to store values in the depthmaps.
 Spherical coordinates \cite{Wal67} are a coordinate system used to define positions over a sphere. 
-They define $\theta$ to be the azimuthal angle $0 \leq \theta < 2\pi$ from the x-axis, $\phi$ to be polar angle (zenithal\textbf{•} angle) $0 \leq \phi \leq \pi$ and $r$ to be the distance (radius) from a point to the origin $r \in [0;+\infty)$.
+They define $\theta$ to be the azimuthal angle $0 \leq \theta < 2\pi$ from the x-axis, $\phi$ to be polar angle (zenithal angle) $0 \leq \phi \leq \pi$ and $r$ to be the distance (radius) from a point to the origin $r \in [0;+\infty)$.
 
 They are obtained from Cartesian coordinates by the following relations : 
 
@@ -211,14 +211,26 @@ This algorithm is decomposed into two steps :
 Those steps are repeated until the sites stop moving (in practice, the process is stopped when the mean displacement is below a given threshold).
 
 \subsection{Voronoi diagram generation}
-To compute the Voronoi diagram, we use a discrete approach, through the multi-sources Dijkstra's algorithm (MSSP) \cite{Dij59}.
+To compute a Voronoi diagram over the depthmap, we use a discrete approach, through the multi-sources Dijkstra's algorithm (MSSP) \cite{Dij59}.
 We adapted a GPU implementation from the work of \cite{PPA16} to include the use of depthmaps.
 
 This method works as a recursive process. 
-At the beginning, each site transmits its ownership to all the pixels in their 1-ring neighborhood.
+At the beginning, each site is marked as belonging to its own voronoi cell, and marked as "ready" to propagate its ownership.
+Throughout the algorithm every pixel will store the cumulative 3D Euclidean distance (geodesic distance approximation) from the site of the Voronoi cell it belongs to. 
+At the initialization this distance is set to infinity for every valid pixel of the depthmap, and set to 0 for every non-valid pixel.
+This defines the domain of the Voronoi diagram computation
+
+Every pixel marked $p$ will check its 1-ring neighborhood and for every neighbor $p_i$, if the currently stored distance for $p_i$ $d(p_i)$ is superior to the distance stored at $p$ plus the 3D Euclidian distance between $p$ and $p_i$. 
+If it is the case, then $p_i$ is considered as belonging to the same cell as $p$, its stored distance is updated accordingly and it is marked as "ready" to propagate its ownership.
+
+The algorithm stops when no pixel is marked anymore.
+
+\subsubsection{Voronoi diagram verification}
+
 
 \subsection{Lloyd relaxation}
 Now that each valid pixel of the depthmap is included in a Voronoi cell, sites are going to be moved, in order for them to be more evenly spaced locally.
+
 Each Voronoi cell can be in two different configurations : 
 \begin{itemize}
 	\item \textbf{the cell doesn't touch a border}. This means that no pixel being part of the Voronoi cell belongs to the border.
@@ -226,6 +238,16 @@ Each Voronoi cell can be in two different configurations :
 	\item \textbf{the cell touches a border}. This means that at least one pixel being part of the Voronoi cell belongs to the border.
 	In this configuration, the cell's site is moved to the closest pixel belonging to the border to the centroid of its cell (in the least squares sense).
 \end{itemize}
+
+Mathematically speaking, we consider a probability density function $\rho(y)$ defined over the domain. 
+Every element belonging to a border is associated an infinite weight. Other elements are given a constant weight.
+This moves the centroid of every cell touching a border on the border.
+
+\begin{equation}
+	z^* = \frac{\int_V y\rho(y)\,dx}{\int_V \rho(y)\,dx},
+\end{equation}
+
+where $z^*$ is the centroid of the Voronoi cell $V$.
 
 \section{Surface triangulation}
 \label{sec:surface_triangulation}
