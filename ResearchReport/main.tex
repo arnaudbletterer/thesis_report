@@ -44,6 +44,7 @@
 
 \documentclass[11pt,fleqn]{book} % Default font size and left-justified equations
 
+\usepackage[toc,page]{appendix}
 %----------------------------------------------------------------------------------------
 
 \input{structure} % Insert the commands.tex file which contains the majority of the structure behind the template
@@ -226,6 +227,7 @@ If it is the case, then $p_i$ is considered as belonging to the same cell as $p$
 The algorithm stops when no pixel is marked anymore.
 
 \subsubsection{Voronoi diagram verification}
+Guskov
 
 
 \subsection{Lloyd relaxation}
@@ -241,13 +243,16 @@ Each Voronoi cell can be in two different configurations :
 
 Mathematically speaking, we consider a probability density function $\rho(y)$ defined over the domain. 
 Every element belonging to a border is associated an infinite weight. Other elements are given a constant weight.
-This moves the centroid of every cell touching a border on the border.
+This moves the centroid of every cell touching a border on the middle of that border.
 
 \begin{equation}
 	z^* = \frac{\int_V y\rho(y)\,dx}{\int_V \rho(y)\,dx},
 \end{equation}
 
 where $z^*$ is the centroid of the Voronoi cell $V$.
+
+However, we can use another function as a probability density function. For example we can use the Gaussian curvature of the surface \ref{sec:gaussian_curvature}.
+Considering this function, we want to give a higher probability to the areas of higher absolute value curvature, and a lower probability to the areas of lower absolute value curvature.
 
 \section{Surface triangulation}
 \label{sec:surface_triangulation}
@@ -263,6 +268,23 @@ where $z^*$ is the centroid of the Voronoi cell $V$.
 \bibliography{bibliography}
 
 \printindex
+
+\begin{appendices}
+\chapter{Differential geometry}
+
+\section{Gaussian curvature}
+\label{sec:gaussian_curvature}
+The Gaussian curvature $K$ of a surface $S$ at a point $p$ is the product of the principal curvatures, $\kappa_1$ and $\kappa_2$ :
+
+\begin{equation}
+	K = \kappa_1\kappa_2
+\end{equation}
+
+Principal curvatures measure how much the surface bends in the two orthogonal directions where the surface bends the most.
+
+The Gaussian curvature is an intrinsic measure of the curvature of a surface. 
+As stated by Gauss in \cite{Gau28} through his \textit{theorema egregium}, the Gaussian curvature of an embedded smooth surface in $\mathbb{R}^3$ is invariant under local isometries.
+\end{appendices}
 
 %----------------------------------------------------------------------------------------
 
