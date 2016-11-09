@@ -226,9 +226,22 @@ If it is the case, then $p_i$ is considered as belonging to the same cell as $p$
 
 The algorithm stops when no pixel is marked anymore.
 
-\subsubsection{Voronoi diagram verification}
-Guskov
+\subsubsection{Voronoi diagram verifications}
+In \cite{Gus07}, verifications have been added in order to ensure that the generation of a surfacic voronoi partition was generating a manifold mesh.
+He decided to verify 5 different topological conditions over the configurations of Voronoi tiles : 
+\begin{itemize}
+	\item \textit{Encrouched boundaries}. A Voronoi tile that touches a surface boundary has to have its seed on that boundary. 
+	If this condition fails a new seed is introduced on the boundary of the surface within the current tile
+	\item \textit{Nonzero genus}. A Voronoi tile needs to have zero genus. If this condition fails, a new seed is introduced at a vertex adjacent to the seed vertex of the tile.
+	\item \textit{Multiple tile boundary components}. The boundary of a Voronoi tile can only consist of a single connected component. If this condition fails a new seed is introduced at a vertex adjacent to the seed vertex of the tile.
+	\item \textit{Single curve tile boundaries}. A Voronoi tile that is adjacent to other tiles should not have more than one neighbor along each tile boundary curve. If this condition fails a new seed is introduced at a vertex adjacent to the tile boundary curve.
+	\item \textit{Multiple neighbor instances}. Any pair of Voronoi tiles cannot touch along more than a single tile boundary curve. If this condition fails, a new seed is introduced at a vertex adjacent to the shorter among the offending tile boundary curves.
+\end{itemize}
 
+In our case, some configurations cannot happen, since depth-maps can only represent the visible areas of a scene from a specific pont of view.
+For example, the \textit{Multiple neighbor instances} cannot happen.
+
+Those conditions are verified at every step of the relaxation.
 
 \subsection{Lloyd relaxation}
 Now that each valid pixel of the depthmap is included in a Voronoi cell, sites are going to be moved, in order for them to be more evenly spaced locally.
@@ -256,6 +269,8 @@ Considering this function, we want to give a higher probability to the areas of 
 
 \section{Surface triangulation}
 \label{sec:surface_triangulation}
+Before triangulating, we need to define whether Voronoi cells belong to the same neighborhood (same surface area) or not. 
+For this we will use the border that was defined at the beginning. We define a 
 
 
 \section{Surface subdivision}
