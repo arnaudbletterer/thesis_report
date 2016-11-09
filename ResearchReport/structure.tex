@@ -22,7 +22,7 @@
 \usepackage[top=3cm,bottom=3cm,left=3cm,right=3cm,headsep=10pt,a4paper]{geometry} % Page margins
 
 \usepackage{graphicx} % Required for including pictures
-\graphicspath{{Pictures/}} % Specifies the directory where pictures are stored
+\graphicspath{{Pictures/}{Images/}} % Specifies the directory where pictures are stored
 
 \usepackage{lipsum} % Inserts dummy text
 
@@ -45,7 +45,7 @@
 
 \usepackage{avant} % Use the Avantgarde font for headings
 %\usepackage{times} % Use the Times font for headings
-\usepackage{mathptmx} % Use the Adobe Times Roman as the default text font together with math symbols from the Sym­bol, Chancery and Com­puter Modern fonts
+% \usepackage{mathptmx} % Use the Adobe Times Roman as the default text font together with math symbols from the Sym­bol, Chancery and Com­puter Modern fonts
 
 \usepackage{microtype} % Slightly tweak font spacing for aesthetics
 \usepackage[utf8]{inputenc} % Required for including letters with accents
@@ -69,6 +69,10 @@
 
 \usepackage{titletoc} % Required for manipulating the table of contents
 \usepackage[toc,page]{appendix}
+\usepackage{algpseudocode}
+\usepackage{algorithm}
+
+\newcommand\norm[1]{\left\lVert#1\right\rVert}
 
 \contentsmargin{0cm} % Removes the default margin
 

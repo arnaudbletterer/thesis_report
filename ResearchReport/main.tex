@@ -133,7 +133,7 @@ and Cartesian coordinates can be recovered from those using :
 	z = r\cos\phi
 \end{equation}
 
-In the depthmap, the intensity stored for each pixel is the value of $r$. Knowing $\Delta\theta$ and $\Delta\phi$ (representing the difference of respectively azimuthal and polar angles between two consecutive points), one can recover $\theta$ and $\phi$ for each pixel of the depthmap, taking in consideration the structure of the depthmaps (2D matrices). 
+In the depthmap, the intensity stored for each pixel is the value of $r$. Knowing $\Delta\theta$ and $\Delta\phi$ (representing the difference of azimuthal and polar angles respectively between two consecutive points), one can recover $\theta$ and $\phi$ for each pixel of the depthmap, taking in consideration the structure of the depthmaps (2D matrices). 
 Using Equation\eqref{eq:spherical_to_cartesian}, it is possible to recover 3D positions of points from intensity values contained in the depthmaps.
 
 \section{Border marking, labeling and routing}
@@ -199,6 +199,9 @@ Interestingly, this can easily be obtained by sampling the depthmap without cons
 
 \arnaud{INSERT IMAGE DENSITY ADAPTIVE SAMPLING}
 
+\subsection{Curvature adaptive sampling}
+In order to obtain a better sampling of the surface, and acquiring precise details during the acquisition, it would 
+
 \section{Voronoi diagram generation and Lloyd relaxation}
 \label{sec:lloyd_relaxation}
 
@@ -228,7 +231,7 @@ The algorithm stops when no pixel is marked anymore.
 
 \subsubsection{Voronoi diagram verifications}
 In \cite{Gus07}, verifications have been added in order to ensure that the generation of a surfacic voronoi partition was generating a manifold mesh.
-He decided to verify 5 different topological conditions over the configurations of Voronoi tiles : 
+He decided to verify 5 different topological conditions over the configurations of Voronoi tiles (Figure \ref{fig:voronoi_conditions}) : 
 \begin{itemize}
 	\item \textit{Encrouched boundaries}. A Voronoi tile that touches a surface boundary has to have its seed on that boundary. 
 	If this condition fails a new seed is introduced on the boundary of the surface within the current tile
@@ -238,10 +241,16 @@ He decided to verify 5 different topological conditions over the configurations 
 	\item \textit{Multiple neighbor instances}. Any pair of Voronoi tiles cannot touch along more than a single tile boundary curve. If this condition fails, a new seed is introduced at a vertex adjacent to the shorter among the offending tile boundary curves.
 \end{itemize}
 
+\begin{figure}[ht]
+\centering\includegraphics[scale=0.4]{VoronoiConditions}
+\caption{Conditions that the Voronoi diagram has to respect in order to generate a 2-manifold triangulation \cite{Gus07}}
+\label{fig:voronoi_conditions}
+\end{figure}
+
 In our case, some configurations cannot happen, since depth-maps can only represent the visible areas of a scene from a specific pont of view.
 For example, the \textit{Multiple neighbor instances} cannot happen.
 
-Those conditions are verified at every step of the relaxation.
+Those conditions are verified after each Voronoi diagram computation. 
 
 \subsection{Lloyd relaxation}
 Now that each valid pixel of the depthmap is included in a Voronoi cell, sites are going to be moved, in order for them to be more evenly spaced locally.
@@ -270,11 +279,15 @@ Considering this function, we want to give a higher probability to the areas of 
 \section{Surface triangulation}
 \label{sec:surface_triangulation}
 Before triangulating, we need to define whether Voronoi cells belong to the same neighborhood (same surface area) or not. 
-For this we will use the border that was defined at the beginning. We define a 
+For this we will use the border that was constructed in \ref{sec:border_marking}.
+We consider that two Voronoi cells are belonging to the same neighborhood if there is at one "non-border" pixel in one of those cells that belongs to the 1-ring neighborhood of a non-vorder pixel of the other cell.
 
+\arnaud{ADD FIGURE VORONOI CELL NEIGHBORHOOD}
 
 \section{Surface subdivision}
 \label{sec:surface_subdivision}
+Now that the coarse triangulation has been generated, we recursively subdivide it to obtain a better approximation of the acquired surface.
+
 
 %----------------------------------------------------------------------------------------
 %	BIBLIOGRAPHY
@@ -299,6 +312,44 @@ Principal curvatures measure how much the surface bends in the two orthogonal di
 
 The Gaussian curvature is an intrinsic measure of the curvature of a surface. 
 As stated by Gauss in \cite{Gau28} through his \textit{theorema egregium}, the Gaussian curvature of an embedded smooth surface in $\mathbb{R}^3$ is invariant under local isometries.
+This means that no matter how the surface is bent, its total Gaussian curvature remains the same, and is related to the Euler Characteristic, based on the topology of the surface.
+
+\subsection{Gaussian curvature approximation}
+In \cite{MMPB02}, an approximation of Gaussian curvature is given by using the vertex angular deficit expression :
+
+\begin{equation}
+	K(v_i) = \frac{2\pi -\sum_{v_j \in \mathcal{N}_1(v_i)} \theta_{ij}}{\mathcal{A}_{mixed}},
+\end{equation}
+
+where $\mathcal{N}_1$ represents the 1-ring neighborhood of $v_i$, $\theta_{ij}$ is the angle of $v_jv_iv_{j-1}$ at $v_i$ which is given by the following formula : 
+
+\begin{equation}
+	\theta_{ij} = \arccos(\frac{\overrightarrow{v_iv_j} \cdot \overrightarrow{v_i v_{j-1}}}
+	{\norm{\overrightarrow{v_iv_j}}^2\norm{\overrightarrow{v_iv_{j-1}}}^2}),
+\end{equation} 
+
+and $\mathcal{A}_{mixed}$ represents the surface area around the vertex $v_i$ : 
+
+\begin{algorithm}
+\caption{$\mathcal{A}_{mixed}$ computation}
+\begin{algorithmic}
+\State $\mathcal{A}_{mixed}$ = 0
+\ForAll{triangle $T$ from the 1-ring neighborhood of x}
+	\If{T is non-obtuse}	//Voronoi area can be considered
+		\State $\mathcal{A}_{mixed} \mathrel{+}= \frac{1}{8} \sum\limits_{v_j \in N_1(v_i)} (\cot \alpha_{ij} + \cot \beta_{ij}) \norm{v_i-v_j}^2$
+	\Else
+		\If{the angle of $T$ at $x$ is obtuse}
+			\State $\mathcal{A}_{mixed} \mathrel{+}= area(T)/2$
+		\Else
+			\State $\mathcal{A}_{mixed} \mathrel{+}= area(T)/4$
+		\EndIf
+	\EndIf
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\arnaud{ADD FIGURE GAUSSIAN CURVATURE}
+
 \end{appendices}
 
 %----------------------------------------------------------------------------------------
