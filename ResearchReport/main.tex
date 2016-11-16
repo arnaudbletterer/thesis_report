@@ -200,7 +200,9 @@ Interestingly, this can easily be obtained by sampling the depthmap without cons
 \arnaud{INSERT IMAGE DENSITY ADAPTIVE SAMPLING}
 
 \subsection{Curvature adaptive sampling}
-In order to obtain a better sampling of the surface, and acquiring precise details during the acquisition, it would 
+In order to obtain a better sampling of the surface, and acquiring precise details during the acquisition, it would be interesting to sample more densely the surface areas where the absolute Gaussian curvature is high (representing high changes in the normal field). For this, the idea is to consider the "normalized" Gaussian curvature as probability density function, giving a higher probability to points in areas of high absolute curvature, and a lower probability to points in areas of low absolute curvature.
+
+\arnaud{INSERT GEOMETRIC GAUSSIAN CURVATURE ADAPTIVE SAMPLING}
 
 \section{Voronoi diagram generation and Lloyd relaxation}
 \label{sec:lloyd_relaxation}
@@ -215,7 +217,14 @@ This algorithm is decomposed into two steps :
 Those steps are repeated until the sites stop moving (in practice, the process is stopped when the mean displacement is below a given threshold).
 
 \subsection{Voronoi diagram generation}
-To compute a Voronoi diagram over the depthmap, we use a discrete approach, through the multi-sources Dijkstra's algorithm (MSSP) \cite{Dij59}.
+Voronoi diagrams \arnaud{(add citation)} are a partition of a space $\mathbb{R}^d$ in a set of convex cells $Vor_S(v_i)$ from $k$ sites where every element contained in the cell $Vor_S(v_i)$ is closer from the site $v_i$ than from any other site $v_j (j \neq i)$
+
+\begin{equation}
+\label{eq:voronoi_cell}
+	Vor_S(v_i) = \{ x \in \mathbb{R}^d, \forall p \in S \norm{v_i-p}_d \leq \norm{v_j-p}\}
+\end{equation}
+
+To compute a Voronoi diagram over the depthmap, we use a discrete approach, through the multi-sources Dijkstra's algorithm (MSSP) \cite{Dij59} which finds for a vertex of a graph, the shortest path through the graph between this vertex and any other vertex in the graph.
 We adapted a GPU implementation from the work of \cite{PPA16} to include the use of depthmaps.
 
 This method works as a recursive process. 
@@ -251,6 +260,14 @@ In our case, some configurations cannot happen, since depth-maps can only repres
 For example, the \textit{Multiple neighbor instances} cannot happen.
 
 Those conditions are verified after each Voronoi diagram computation. 
+
+\subsubsection{Power diagram from Gaussian curvature}
+Power diagrams are an extension of Voronoi diagrams to represent the fact that some sites can have a higher importance than others, for them to cover a larger area with respect to their neighbors. Similarly to what has been done for the poisson sampling in Sec.\ref{sec:poisson_sampling}, where the probability density function has been weighted by the absolute Gaussian curvature of the surface, it is possible to weight the influence of the Voronoi sites by the absolute Gaussian curvature, in order to create smaller cells (smaller weight) around the surface areas which have a high absolute curvature.
+
+\begin{equation}
+\label{eq:power_cell}
+	Vor_S(v_i) = \{ x \in \mathbb{R}^d, \forall p \in S \norm{v_i-p}_d - w_i \leq \norm{v_j-p} - w_j\}
+\end{equation}
 
 \subsection{Lloyd relaxation}
 Now that each valid pixel of the depthmap is included in a Voronoi cell, sites are going to be moved, in order for them to be more evenly spaced locally.
