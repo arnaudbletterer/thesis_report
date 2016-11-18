@@ -393,8 +393,8 @@ where :
 \begin{equation}
 	f(x) = 
     \begin{cases}
-      \frac{1-\epsilon}{|B_{V_i}||C|}, & \text{if}\ x \in B_{V_i} \\
-      \frac{\epsilon}{(|V_i|-|B_{V_i}|)|C|}, & \text{if}\ x \not\in B_{V_i}
+      \frac{1-\varepsilon}{|B_{V_i}||C|}, & \text{if}\ x \in B_{V_i} \\
+      \frac{\varepsilon}{(|V_i|-|B_{V_i}|)|C|}, & \text{if}\ x \not\in B_{V_i}
     \end{cases}
 \end{equation}
 
@@ -404,9 +404,11 @@ where :
 
 \begin{align*}
 	\sum_{i=1}^k \int_{V_i}f(x)dx 
-	&= \int_{V_i \setminus B_{V_i}}\frac{\epsilon}{(|V_i|-|B_{V_i}|)|C|}dx + \int_{B_{V_i}}\frac{1-\epsilon}{|B_{V_i}||C|}dx \\
-	&= \frac{\epsilon}{(|V_i|-|B_{V_i}|)|C|}\int_{V_i \setminus B_{V_i}}dx + \frac{1-\epsilon}{|B_{V_i}||C|}\int_{B_{V_i}}dx \\
-	&= \frac{1}{|C|}(\frac{\epsilon}{|V_i|-|B_{V_i}|}\int_{V_i \setminus B_{V_i}}dx + \frac{1-\epsilon}{|B_{V_i}|}\int_{B_{V_i}}dx)
+	&= \sum_{i=1}^k \int_{V_i \setminus B_{V_i}}\frac{\varepsilon}{(|V_i|-|B_{V_i}|)|C|}dx + \int_{B_{V_i}}\frac{1-\varepsilon}{|B_{V_i}||C|}dx \\
+	&= \sum_{i=1}^k \frac{\varepsilon}{(|V_i|-|B_{V_i}|)|C|}\int_{V_i \setminus B_{V_i}}dx + \frac{1-\varepsilon}{|B_{V_i}||C|}\int_{B_{V_i}}dx \\
+	&= \frac{1}{|C|} \sum_{i=1}^k \frac{\varepsilon}{|V_i|-|B_{V_i}|}\int_{V_i \setminus B_{V_i}}dx + \frac{1-\varepsilon}{|B_{V_i}|}\int_{B_{V_i}}dx \\
+	&= \frac{1}{|C|} \sum_{i=1}^k \varepsilon + 1 - \varepsilon\\
+	&= \frac{k}{|C|} = 1
 \end{align*}
 
 \end{appendices}
