@@ -217,24 +217,26 @@ This algorithm is decomposed into two steps :
 Those steps are repeated until the sites stop moving (in practice, the process is stopped when the mean displacement is below a given threshold).
 
 \subsection{Voronoi diagram generation}
-Voronoi diagrams \arnaud{(add citation)} are a partition of a space $\mathbb{R}^d$ in a set of convex cells $Vor_S(v_i)$ from $k$ sites where every element contained in the cell $Vor_S(v_i)$ is closer from the site $v_i$ than from any other site $v_j (j \neq i)$
+Voronoi diagrams \arnaud{(add citation)} are a partition of a space $\mathbb{R}^d$ in a set of convex cells $Vor_S(v_i)$ from $k$ sites where every element contained in the cell $Vor_S(v_i)$ is closer from the site $v_i$ than from any other site $v_j$
 
 \begin{equation}
 \label{eq:voronoi_cell}
-	Vor_S(v_i) = \{ x \in \mathbb{R}^d, \forall p \in S \norm{v_i-p}_d \leq \norm{v_j-p}\}
+	Vor_S(v_i) = \{ x \in \mathbb{R}^d, \forall p \in S d(v_i,p) \leq d(v_j,p), j \neq i\},
 \end{equation}
+
+where $d$ is a distance metric. Generally, Euclidean distance metric are used to partition the domain, however it is possible to use other distance metrics, that could be more representative when dealing with 3D surfaces for example.
 
 To compute a Voronoi diagram over the depthmap, we use a discrete approach, through the multi-sources Dijkstra's algorithm (MSSP) \cite{Dij59} which finds for a vertex of a graph, the shortest path through the graph between this vertex and any other vertex in the graph.
 We adapted a GPU implementation from the work of \cite{PPA16} to include the use of depthmaps.
 
 This method works as a recursive process. 
 At the beginning, each site is marked as belonging to its own voronoi cell, and marked as "ready" to propagate its ownership.
-Throughout the algorithm every pixel will store the cumulative 3D Euclidean distance (geodesic distance approximation) from the site of the Voronoi cell it belongs to. 
+Throughout the algorithm every pixel will store its accumulated distance from the site of the Voronoi cell it belongs to. 
 At the initialization this distance is set to infinity for every valid pixel of the depthmap, and set to 0 for every non-valid pixel.
 This defines the domain of the Voronoi diagram computation
 
 Every pixel marked $p$ will check its 1-ring neighborhood and for every neighbor $p_i$, if the currently stored distance for $p_i$ $d(p_i)$ is superior to the distance stored at $p$ plus the 3D Euclidian distance between $p$ and $p_i$. 
-If it is the case, then $p_i$ is considered as belonging to the same cell as $p$, its stored distance is updated accordingly and it is marked as "ready" to propagate its ownership.
+If it is the case, $p_i$ will be considered as belonging to the same cell as $p$, its stored distance being updated accordingly and it is marked as "ready" to propagate its ownership.
 
 The algorithm stops when no pixel is marked anymore.
 
@@ -290,8 +292,8 @@ This moves the centroid of every cell touching a border on the middle of that bo
 
 where $z^*$ is the centroid of the Voronoi cell $V$.
 
-However, we can use another function as a probability density function. For example we can use the Gaussian curvature of the surface \ref{sec:gaussian_curvature}.
-Considering this function, we want to give a higher probability to the areas of higher absolute value curvature, and a lower probability to the areas of lower absolute value curvature.
+However, we can use another function as a probability density function. For example we can use the Gaussian curvature of the surface (App.\ref{sec:gaussian_curvature}).
+Considering this function, we want to give a higher probability to the areas of higher absolute Gaussian curvature, and a lower probability to the areas of lower absolute Gaussian curvature. This means that the weights should be proportional to the the normalized Gaussian curvature, i.e. the pixels having the higher Gaussian curvature will have a bigger weight than the areas of lower Gaussian curvature.
 
 \section{Surface triangulation}
 \label{sec:surface_triangulation}
@@ -303,8 +305,23 @@ We consider that two Voronoi cells are belonging to the same neighborhood if the
 
 \section{Surface subdivision}
 \label{sec:surface_subdivision}
-Now that the coarse triangulation has been generated, we recursively subdivide it to obtain a better approximation of the acquired surface.
+Now that the coarse triangulation has been generated, the idea is to recursively subdivide it to obtain a better approximation of the acquired surface.
+Many face subdivision schemes exist, they are separated into two families, the interpolating and the approximating ones :
 
+\textbf{Approximating schemes}
+\begin{itemize}
+	\item Catmull-Clark subdivision
+	\item Doo-Sabin subdivision
+	\item Loop subdivision
+	\item Mid-Edge subdivision
+	\item $\sqrt(3)$ subdivision
+\end{itemize}
+
+\textbf{Interpolating schemes}
+\begin{itemize}
+	\item Butterfly subdivision
+	\item 
+\end{itemize}
 
 %----------------------------------------------------------------------------------------
 %	BIBLIOGRAPHY
