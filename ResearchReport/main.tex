@@ -315,8 +315,6 @@ Now that the coarse triangulation has been generated, we recursively subdivide i
 \printindex
 
 \begin{appendices}
-\chapter{Differential geometry}
-
 \section{Gaussian curvature}
 \label{sec:gaussian_curvature}
 The Gaussian curvature $K$ of a surface $S$ at a point $p$ is the product of the principal curvatures, $\kappa_1$ and $\kappa_2$ :
@@ -366,6 +364,33 @@ and $\mathcal{A}_{mixed}$ represents the surface area around the vertex $v_i$ :
 \end{algorithm}
 
 \arnaud{ADD FIGURE GAUSSIAN CURVATURE}
+
+\section{Proofs}
+
+\begin{equation}
+	y_i = \frac{\int_{V_i}xf(x)dx}{\int_{V_i}f(x)dx},
+\end{equation}
+
+where : 
+
+\begin{equation}
+	f(x) = 
+    \begin{cases}
+      \frac{1-\epsilon}{|B_{V_i}||C|}, & \text{if}\ x \in B_{V_i} \\
+      \frac{\epsilon}{(|V_i|-|B_{V_i}|)|C|}, & \text{if}\ x \not\in B_{V_i}
+    \end{cases}
+\end{equation}
+
+\begin{equation}
+	\sum_{i=1}^k \int_{V_i}f(x)dx = 1
+\end{equation}
+
+\begin{align*}
+	\sum_{i=1}^k \int_{V_i}f(x)dx 
+	&= \int_{V_i \setminus B_{V_i}}\frac{\epsilon}{(|V_i|-|B_{V_i}|)|C|}dx + \int_{B_{V_i}}\frac{1-\epsilon}{|B_{V_i}||C|}dx \\
+	&= \frac{\epsilon}{(|V_i|-|B_{V_i}|)|C|}\int_{V_i \setminus B_{V_i}}dx + \frac{1-\epsilon}{|B_{V_i}||C|}\int_{B_{V_i}}dx \\
+	&= \frac{1}{|C|}(\frac{\epsilon}{|V_i|-|B_{V_i}|}\int_{V_i \setminus B_{V_i}}dx + \frac{1-\epsilon}{|B_{V_i}|}\int_{B_{V_i}}dx)
+\end{align*}
 
 \end{appendices}
 
