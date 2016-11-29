@@ -149,15 +149,20 @@ To avoid this, we present a method to mark the borders, identify each of them un
 \subsection{Border marking}
 First, we mark all the pixels of the depthmap that do not fulfill a local depth-discontinuity condition. We consider a depth-discontinuity as being an important change of depth in at least one direction (horizontal, vertical or diagonal).
 
-During that step, we are defining how points would be triangulated if a mesh was to be constructed between neighboring pixels over the whole depthmap. For this, we consider an arbitrary connectivity pattern, connecting one pixel to 6 of its neighbors, and will use that pattern to consider the possible neighbors of a point \arnaud{ADD FIGURE CONNECTIVITY}. This pattern will be used during the following neighborhood considerations.
+During that step, we are defining how points would be triangulated if a mesh was to be constructed between neighboring pixels over the whole depthmap. For this, we consider an arbitrary connectivity pattern, connecting one pixel to 6 of its neighbors, and will use that pattern to consider the possible neighbors of a point (Figure \ref{fig:pixel_neighborhood}. This pattern will be used during the following neighborhood considerations.
 
-We will mark both pixels along the border, meaning that those borders are 
+\begin{figure}[ht]
+\centering\includegraphics[scale=0.4]{PixelNeighborhood}
+\caption{The 6-neighborhood considered around each pixel}
+\label{fig:pixel_neighborhood}
+\end{figure}
 
 For each pixel $p$, we search to know if there a high intensity variation with respect to its neighborhood. If this is the case, it means that the pixels do not belong the same surface area, and then need to be separated for the further processings.
-We consider that each pixel has at least one neighbor in each direction belonging to the same surface area (low intensity variation). Knowing that, we evaluate how much difference there is between the 2 neighbors in each direction (top and bottom, left and right, bottom-right and top-left.
-For this, we compute a mean intensity variation (MIV) per direction, by dividing the intensity of the current pixel with the one of each neighbor belonging to that direction. We consider that if the variation of intensity between $p$ and one of his neighbor is over the associated MIV (+ or - $k$\%), then there exists a border between $p$ and this specific neighbor. In all of our experiments we used $k = 3$ and found it to give good results.
+We consider that each pixel has at least one neighbor in each direction belonging to the same surface area (low intensity variation). Knowing that, we evaluate how much difference there is between the 2 neighbors in each direction (top and bottom, left and right, bottom-left and top-right.
+For this, we compute a mean intensity variation (MIV) per direction, by dividing the intensity of the current pixel with the one of each neighbor belonging to that direction. We consider that if the variation of intensity between $p$ and one of his neighbor is superior to the computed MIV (+ or - $k$\%), then there exists a border between $p$ and this specific neighbor. In all of our experiments we used $k = 3$ and found it to give good results.
+When a pixel $p$ detects that this intensity variation is above the computed threshold for a certain pixel $p_i \in \mathcal{N}(p)$
 
-Since this is a highly parallelizable algorithm (each operation is executed indepently for each pixel), we implemented it using GPGPU methods. This makes the computation of the borders really fast.
+Since this is a highly parallelizable algorithm (each operation is executed indepently for each pixel), we implemented it using GPGPU methods.
 
 \subsection{Border labeling and routing}
 Now that borders have been indentified, we need to label them in order to be able to consider them independently. 
@@ -192,7 +197,7 @@ By using this method, we consider Poisson disks (surface patches to be more prec
 
 \subsection{Density adaptive sampling}
 Depthmaps can represent scenes having a really huge difference in sampling density, depending on the distance of a surface area to the scanner. 
-For example, on the (Figure \arnaud{ADD FIGURE DIFFERENCE OF SAMPLING}) points in the green area have a sampling density of \arnaud{sampling density value w.r.t Bbox} and the pixels in the blue area have a sampling density of \arnaud{sampling density value w.r.t Bbox}. It can be interesting to conserve that difference of density when choosing the samples, in order to keep the precision of the original acquisition, when fine structures have been acquired.
+For example, on the (Figure \arnaud{ADD FIGURE SHOWING THE SAMPLING DENSITY DIFFERENCE}) points in the green area have a sampling density of \arnaud{sampling density value w.r.t Bbox} and the pixels in the blue area have a sampling density of \arnaud{sampling density value w.r.t Bbox}. It can be interesting to conserve that difference of density when choosing the samples, in order to keep the precision of the original acquisition, when fine structures have been acquired.
 
 Instead of sampling a point cloud uniformly in 3D, we suggest to take the local sampling density into account. In other words, rather than computing disks with constant radius, we constrain each disk to contain a constant number of points.
 Interestingly, this can easily be obtained by sampling the depthmap without considering 3D geodesic distances, i.e. doing a classical poisson-disk sampling on an discretized planar domain.
@@ -200,9 +205,10 @@ Interestingly, this can easily be obtained by sampling the depthmap without cons
 \arnaud{INSERT IMAGE DENSITY ADAPTIVE SAMPLING}
 
 \subsection{Curvature adaptive sampling}
-In order to obtain a better sampling of the surface, and acquiring precise details during the acquisition, it would be interesting to sample more densely the surface areas where the absolute Gaussian curvature is high (representing high changes in the normal field). For this, the idea is to consider the "normalized" Gaussian curvature as probability density function, giving a higher probability to points in areas of high absolute curvature, and a lower probability to points in areas of low absolute curvature.
+In order to preserve the fine details during the sampling process, it would be interesting to sample more densely the surface areas where the surface curvature is high (representing high changes in the normal field). For this, the idea is to consider the "normalized" Gaussian curvature as probability density function, giving a higher probability to points in areas of high absolute curvature, and a lower probability to points in areas of low absolute curvature.
 
 \arnaud{INSERT GEOMETRIC GAUSSIAN CURVATURE ADAPTIVE SAMPLING}
+\arnaud{Subsection incomplete, need an explanation on curvature estimation from the normals (so adding also an explanation on the normal computation using depthmap connectivity and 3D positions)}
 
 \section{Voronoi diagram generation and Lloyd relaxation}
 \label{sec:lloyd_relaxation}
@@ -217,32 +223,34 @@ This algorithm is decomposed into two steps :
 Those steps are repeated until the sites stop moving (in practice, the process is stopped when the mean displacement is below a given threshold).
 
 \subsection{Voronoi diagram generation}
-Voronoi diagrams \arnaud{(add citation)} are a partition of a space $\mathbb{R}^d$ in a set of convex cells $Vor_S(v_i)$ from $k$ sites where every element contained in the cell $Vor_S(v_i)$ is closer from the site $v_i$ than from any other site $v_j$
+Voronoi diagrams \arnaud{(add citation)} are a partition of a space $\mathbb{R}^d$ in a set of convex cells $V_S(v_i)$ from $k$ sites where every element contained in the cell $V_S(v_i)$ is closer from the site $v_i$ than from any other site $v_j$
 
 \begin{equation}
 \label{eq:voronoi_cell}
-	Vor_S(v_i) = \{ x \in \mathbb{R}^d, \forall p \in S d(v_i,p) \leq d(v_j,p), j \neq i\},
+	V_S(v_i) = \{ x \in \mathbb{R}^d, \forall p \in S\, d(v_i,p) \leq d(v_j,p), j \neq i\},
 \end{equation}
 
-where $d$ is a distance metric. Generally, Euclidean distance metric are used to partition the domain, however it is possible to use other distance metrics, that could be more representative when dealing with 3D surfaces for example.
+where $d$ is a distance metric. Generally, the euclidean distance metric is used to partition the domain, however it is possible to use other distance metrics (Manhattan distance, geodesic distance, ...), that will generate other partitions, depending on the needs.
 
-To compute a Voronoi diagram over the depthmap, we use a discrete approach, through the multi-sources Dijkstra's algorithm (MSSP) \cite{Dij59} which finds for a vertex of a graph, the shortest path through the graph between this vertex and any other vertex in the graph.
+To compute a Voronoi diagram over a depthmap, we use a discrete approach, through the multi-sources Dijkstra's algorithm (MSSP) \cite{Dij59} which finds for a vertex of a graph, the shortest path through the graph between this vertex and any other vertex in the graph.
 We adapted a GPU implementation from the work of \cite{PPA16} to include the use of depthmaps.
 
 This method works as a recursive process. 
-At the beginning, each site is marked as belonging to its own voronoi cell, and marked as "ready" to propagate its ownership.
+At the beginning, every site $v_i$ marks the pixel it is lying on and the pixels in the 1-ring neighborhood of that pixel as being part of the Voronoi cell $V_S(v_i)$ of the site $v_i$ if their distance to that pixel is closer than any other site $v_j, j \neq i$ and marked as "ready" to propagate.
 Throughout the algorithm every pixel will store its accumulated distance from the site of the Voronoi cell it belongs to. 
 At the initialization this distance is set to infinity for every valid pixel of the depthmap, and set to 0 for every non-valid pixel.
-This defines the domain of the Voronoi diagram computation
+This defines the domain of the Voronoi diagram computation, which is limited to the 
 
-Every pixel marked $p$ will check its 1-ring neighborhood and for every neighbor $p_i$, if the currently stored distance for $p_i$ $d(p_i)$ is superior to the distance stored at $p$ plus the 3D Euclidian distance between $p$ and $p_i$. 
+Every pixel marked $p$ will check its 1-ring neighborhood and for every neighbor $p_i$, if the currently stored distance for $p_i$ $d(p_i)$ is superior to the distance stored at $p$ plus the 3D euclidian distance between $p$ and $p_i$. 
 If it is the case, $p_i$ will be considered as belonging to the same cell as $p$, its stored distance being updated accordingly and it is marked as "ready" to propagate its ownership.
 
 The algorithm stops when no pixel is marked anymore.
 
+\arnaud{ADD FIGURE COMPARISON DISTANCE METRICS VORONOI (GEODESIC, EUCLIDEAN 2D)}
+
 \subsubsection{Voronoi diagram verifications}
-In \cite{Gus07}, verifications have been added in order to ensure that the generation of a surfacic voronoi partition was generating a manifold mesh.
-He decided to verify 5 different topological conditions over the configurations of Voronoi tiles (Figure \ref{fig:voronoi_conditions}) : 
+In \cite{Gus07}, verifications have been added in order to ensure that a Voronoi partition was generating a manifold mesh.
+He suggested to verify 5 different topological conditions over the configurations of Voronoi tiles (Figure \ref{fig:voronoi_conditions}) : 
 \begin{itemize}
 	\item \textit{Encrouched boundaries}. A Voronoi tile that touches a surface boundary has to have its seed on that boundary. 
 	If this condition fails a new seed is introduced on the boundary of the surface within the current tile
@@ -258,8 +266,9 @@ He decided to verify 5 different topological conditions over the configurations 
 \label{fig:voronoi_conditions}
 \end{figure}
 
-In our case, some configurations cannot happen, since depth-maps can only represent the visible areas of a scene from a specific pont of view.
-For example, the \textit{Multiple neighbor instances} cannot happen.
+In our case, some configurations cannot happen.
+\textit{Nonzero genus} is not a possible cases, because by definition the depthmap represents the parameterization of the visible part of the scene. Thus the surface (or the multiple surface components) obtained after scanning has a zero genus, and each Voronoi cell also, since it is a subset of the surface acquired.
+\arnaud{There must be others that do not apply, but I can't really understand the \textit{Single curve tile boundaries} and \textit{Multiple neighbor instances} statements for now.}
 
 Those conditions are verified after each Voronoi diagram computation. 
 
@@ -268,8 +277,10 @@ Power diagrams are an extension of Voronoi diagrams to represent the fact that s
 
 \begin{equation}
 \label{eq:power_cell}
-	Vor_S(v_i) = \{ x \in \mathbb{R}^d, \forall p \in S \norm{v_i-p}_d - w_i \leq \norm{v_j-p} - w_j\}
+	V_S(v_i) = \{ x \in \mathbb{R}^d, \forall p \in S\, d(v_i,p) - w_i \leq d(v_j,p) - w_j\}
 \end{equation}
+
+\arnaud{Subsubsection incomplete : more explanation about the way to compute the weights (using the curvature values) in order for the Voronoi cells size to vary smoothly.}
 
 \subsection{Lloyd relaxation}
 Now that each valid pixel of the depthmap is included in a Voronoi cell, sites are going to be moved, in order for them to be more evenly spaced locally.
@@ -279,49 +290,36 @@ Each Voronoi cell can be in two different configurations :
 	\item \textbf{the cell doesn't touch a border}. This means that no pixel being part of the Voronoi cell belongs to the border.
 	In this configuration, the cell's site is moved to the centroid of its cell
 	\item \textbf{the cell touches a border}. This means that at least one pixel being part of the Voronoi cell belongs to the border.
-	In this configuration, the cell's site is moved to the closest pixel belonging to the border to the centroid of its cell (in the least squares sense).
+	In this configuration, the cell's site is moved to the orthogonal projection of the centroid of the cell on the border of the cell.
 \end{itemize}
 
-Mathematically speaking, we consider a probability density function $\rho(y)$ defined over the domain. 
-Every element belonging to a border is associated an infinite weight. Other elements are given a constant weight.
-This moves the centroid of every cell touching a border on the middle of that border.
+The centroid of the voronoi cell can be obtained using the following integral :
 
 \begin{equation}
-	z^* = \frac{\int_V y\rho(y)\,dx}{\int_V \rho(y)\,dx},
+	z_i^* = \frac{\int_{V_S(v_i)} x\rho(x)\,dx}{\int_{V_S(v_i)} \rho(x)\,dx},
 \end{equation}
 
-where $z^*$ is the centroid of the Voronoi cell $V$.
+where $z^*$ is the centroid of the Voronoi cell $V_S(v_i)$ and $\rho(x)$ a probability density function defined over the domain $S$.
+In our discrete case (where the domain is a depthmap), the integral can be re-written as the sum over all the pixels $p$ belonging to a Voronoi cell : 
 
-However, we can use another function as a probability density function. For example we can use the Gaussian curvature of the surface (App.\ref{sec:gaussian_curvature}).
-Considering this function, we want to give a higher probability to the areas of higher absolute Gaussian curvature, and a lower probability to the areas of lower absolute Gaussian curvature. This means that the weights should be proportional to the the normalized Gaussian curvature, i.e. the pixels having the higher Gaussian curvature will have a bigger weight than the areas of lower Gaussian curvature.
+\begin{equation}
+	z_i^* = \frac{\sum_{p_j \in V_S(v_i)} p_j\rho(p_j)}{\sum_{p_j \in V_S(v_i)} \rho(p_j)},
+\end{equation}
+
+\arnaud{Subsection incomplete, need to add the explanation about the orthogonal projection of the centroid on the border of the Voronoi cell.}
 
 \section{Surface triangulation}
 \label{sec:surface_triangulation}
-Before triangulating, we need to define whether Voronoi cells belong to the same neighborhood (same surface area) or not. 
+Before triangulating, we need to define whether Voronoi cells belong to the same neighborhood (same surface area) or not. In comparison to the typical Delaunay dual-triangulation obtained from the Voronoi diagram, here we don't want every Voronoi cells touching each other to be linked by an edge. Some cells belong to different surface areas and then shouldn't be connected together.
 For this we will use the border that was constructed in \ref{sec:border_marking}.
-We consider that two Voronoi cells are belonging to the same neighborhood if there is at one "non-border" pixel in one of those cells that belongs to the 1-ring neighborhood of a non-vorder pixel of the other cell.
+We consider that two Voronoi cells are belonging to the same neighborhood if there is at least one "non-border" pixel in one of those cells that belongs to the 1-ring neighborhood of a non-border pixel of the other cell.
 
 \arnaud{ADD FIGURE VORONOI CELL NEIGHBORHOOD}
 
+\arnaud{Section incomplete}
+
 \section{Surface subdivision}
 \label{sec:surface_subdivision}
-Now that the coarse triangulation has been generated, the idea is to recursively subdivide it to obtain a better approximation of the acquired surface.
-Many face subdivision schemes exist, they are separated into two families, the interpolating and the approximating ones :
-
-\textbf{Approximating schemes}
-\begin{itemize}
-	\item Catmull-Clark subdivision
-	\item Doo-Sabin subdivision
-	\item Loop subdivision
-	\item Mid-Edge subdivision
-	\item $\sqrt(3)$ subdivision
-\end{itemize}
-
-\textbf{Interpolating schemes}
-\begin{itemize}
-	\item Butterfly subdivision
-	\item 
-\end{itemize}
 
 %----------------------------------------------------------------------------------------
 %	BIBLIOGRAPHY
