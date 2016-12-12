@@ -112,6 +112,7 @@ There are many different methods to recover 3D positions from depthmaps, dependi
 
 \subsubsection{LiDAR scanners}
 For LiDAR scanners for example, it is common to use spherical coordinates to store values in the depthmaps.
+\arnaud{Adding explanation about laser pulse system}
 Spherical coordinates \cite{Wal67} are a coordinate system used to define positions over a sphere. 
 They define $\theta$ to be the azimuthal angle $0 \leq \theta < 2\pi$ from the x-axis, $\phi$ to be polar angle (zenithal angle) $0 \leq \phi \leq \pi$ and $r$ to be the distance (radius) from a point to the origin $r \in [0;+\infty)$.
 
@@ -135,6 +136,14 @@ and Cartesian coordinates can be recovered from those using :
 
 In the depthmap, the intensity stored for each pixel is the value of $r$. Knowing $\Delta\theta$ and $\Delta\phi$ (representing the difference of azimuthal and polar angles respectively between two consecutive points), one can recover $\theta$ and $\phi$ for each pixel of the depthmap, taking in consideration the structure of the depthmaps (2D matrices). 
 Using Equation\eqref{eq:spherical_to_cartesian}, it is possible to recover 3D positions of points from intensity values contained in the depthmaps.
+
+\section{Introduction}
+
+\section{Related work}
+
+\section{General overview}
+
+
 
 \section{Border marking, labeling and routing}
 \label{sec:border_marking}
