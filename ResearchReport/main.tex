@@ -138,22 +138,70 @@ In the depthmap, the intensity stored for each pixel is the value of $r$. Knowin
 Using Equation\eqref{eq:spherical_to_cartesian}, it is possible to recover 3D positions of points from intensity values contained in the depthmaps.
 
 \section{Introduction}
+\label{sec:introduction}
 
 \section{Related work}
+\label{sec:related_work}
+
+Nowadays scanners are able to sample scenes with hundreds of million of points. Such amount of samples makes the surface reconstruction and visualization a challenging problem.
+Specific surface reconstruction algorithms 
+
+To resolve the interactive visualization problem, one common approach used is to modify the connectivity of the reconstructed mesh, in order to be able to easily decimate and refine it, depending on the distance of the visualization of the object to the viewer.
+To do so, most of the methods find a parameterization of the mesh, and having a coarse approximation of the original mesh, which is called the base mesh, recursively subdivide every triangle of this base mesh and reproject points over the original surface. A survey has recently been done to categorize the different methods \cite{PRS15}.
+However this method requires to find a "good" parameterization of the surface, which can be a difficult problem, especially when it comes to handle objects having a really high gender.
+Moreover, this introduces a remeshing error between the reconstructed mesh and the remeshed one.
+
+Many 3D acquisition devices do not only provide a 3D point cloud at the output of an acquisition. They can also provide 2D parameterizations of a scene from the point of view of a scanner during the acquisition process, in the form of a depthmap (Figure \ref{fig:depthmap_point_cloud}(a)).
+
+\begin{figure}[ht]
+\centering\includegraphics[scale=0.05]{DepthMap-Garuda}
+\centering\includegraphics[scale=0.12]{PointCloud-Garuda}
+\caption{Example of a depthmap (a) (darker colors represent closer points to the scanner) and the point cloud representing the embedding of the depthmap in 3D (b) (normals have been computed to enhance the visualization).}
+\label{fig:depthmap_point_cloud}
+\end{figure}
+
 
 \section{General overview}
+\label{sec:general_overview}
 
+Figure \ref{fig:general_steps} represents the different steps of our method used to reconstruct a semi-regular surface mesh from a depthmap.
 
+\begin{figure}[ht]
+\centering\includegraphics[scale=0.46]{MethodPipeline}
+\caption{General steps of our algorithm}
+\label{fig:general_steps}
+\end{figure}
+
+Before any step is applied a first border detection step is applied in order to identify parts ot the depthmap where two close pixels represent points on different surface areas (Section \ref{sec:border_marking}). Then a Poisson-disk sampling is applied on the depthmap (Section \ref{sec:poisson_sampling}) that will generate the initial sites for a Lloyd relaxation procedure (Section \ref{sec:lloyd_relaxation}). Then the obtained Voronoi diagram will be transformed into a 2D triangulation, considering an altered dual representation (which takes into account the borders detected at the beginning). Finally, from this 2D triangulation, different levels of resolution are reconstructed using a 1-to-4 face subdivision approach (Section \ref{sec:surface_subdivision}).
 
 \section{Border marking, labeling and routing}
 \label{sec:border_marking}
 
+A depthmap is a 2D parameterization of a 3D scene visualized from a specific point of view. From this representation it is possible to obtain a point cloud representing the samples acquired from this specific point of view (Figure \ref{fig:depthmap_point_cloud}(b)).
+
 This link between depth values and 3D coordinates motivated us using depthmaps as a parameterization domain to apply algorithm on point clouds, considering the implicit connectivity between pixels to do local computations requesting the consideration of neighboring points.
 
 If most of the time it is correct to consider that neighboring pixels in a depthmap are also neighbors on the surface (with respect to the sampling density of the acquisition), it is not the case along depth discontinuities.
-Since an acquisition is done from a specific position and orientation, they can only represent visible points from that specific point of view. Thus many surface areas can be occluded, and different surface areas could be considered touching each other in the depthmap.
+Since an acquisition is done from a specific position and orientation, they can only represent visible points from that specific point of view. 
+Thus many surface areas can be occluded, and different surface areas could be considered touching each other in the depthmap.
 
 To avoid this, we present a method to mark the borders, identify each of them uniquely and store the path from the beginning until the end of each border.
+
+\begin{figure}
+\centering
+\scalebox{0.05}{
+\begin{tikzpicture}[spy using outlines={circle,red,magnification=10,size=50cm, connect spies}]
+\node {\pgfimage{Images/DepthMap-Garuda}};
+\spy on (5,-1) in node [left] at (100,0);
+\end{tikzpicture}
+\begin{tikzpicture}[spy using outlines={circle,red,magnification=10,size=50cm, connect spies}]
+\node {\pgfimage{Images/Borders-Garuda}};
+\spy on (5,-1) in node [left] at (100,0);
+\end{tikzpicture}
+}
+\caption{High depth variation between neighboring pixels that do not belong to neighboring surface areas (left), and the detected associated borders (right).}
+\label{fig:depth_discontinuity}
+\end{figure}
 
 \subsection{Border marking}
 First, we mark all the pixels of the depthmap that do not fulfill a local depth-discontinuity condition. We consider a depth-discontinuity as being an important change of depth in at least one direction (horizontal, vertical or diagonal).
@@ -198,26 +246,37 @@ Then, we compute a connectivity graph over the depthmap. Each pixel can have up 
 An egde exists between two pixels if they are not separated by a border.
 
 \subsection{Uniform sampling}
-This method uses the 3D coordinates of points (which are reprojected pixels) and weights each edge using the euclidean distance between both points.
-By using Dijkstra's algorithm, we can approximate geodesic distances. 
-By using this method, we consider Poisson disks (surface patches to be more precise) to have an equal area in 3D.
+This method uses the 3D coordinates of points (where each point is a pixel embedded in 3D using the depth information stored at that pixel) and weights each edge using the euclidean distance between both points.
+By using Dijkstra's algorithm, we can then construct the shortest path between a source (center of a disk) and any point of the domain. 
+By using this method, we consider Poisson disks (surface patches to be more precise) that have an uniform area in 3D.
 
-\arnaud{INSERT IMAGE UNIFORM SAMPLING}
+\begin{figure}[ht]
+\centering
+\includegraphics[scale=0.05]{PoissonSampling3D-Garuda}
+\includegraphics[scale=0.05]{PoissonDisks3D-Garuda}
+\includegraphics[scale=0.12]{PoissonDisks3DEmbedded-Garuda}
+\caption{Poisson-disk sampling of the model Garuda considering disks with an uniform area in 3D (a) with their associated disks (b) and the same disks, but visualized in 3D (c)}
+\label{fig:poisson_sampling}
+\end{figure}
 
 \subsection{Density adaptive sampling}
 Depthmaps can represent scenes having a really huge difference in sampling density, depending on the distance of a surface area to the scanner. 
 For example, on the (Figure \arnaud{ADD FIGURE SHOWING THE SAMPLING DENSITY DIFFERENCE}) points in the green area have a sampling density of \arnaud{sampling density value w.r.t Bbox} and the pixels in the blue area have a sampling density of \arnaud{sampling density value w.r.t Bbox}. It can be interesting to conserve that difference of density when choosing the samples, in order to keep the precision of the original acquisition, when fine structures have been acquired.
 
-Instead of sampling a point cloud uniformly in 3D, we suggest to take the local sampling density into account. In other words, rather than computing disks with constant radius, we constrain each disk to contain a constant number of points.
-Interestingly, this can easily be obtained by sampling the depthmap without considering 3D geodesic distances, i.e. doing a classical poisson-disk sampling on an discretized planar domain.
+Instead of sampling a point cloud uniformly in 3D, we suggest to take the local sampling density into account. In other words, rather than computing disks with an uniform radius in 3D, we constrain each disk to have an uniform radius in 2D.
+Interestingly, this can easily be obtained by sampling the depthmap without considering 3D geodesic distances, i.e. doing a classical Poisson-disk sampling on an discretized planar domain, using a Dart Throwing approach for example.
 
-\arnaud{INSERT IMAGE DENSITY ADAPTIVE SAMPLING}
+\begin{figure}[ht]
+\centering\includegraphics[scale=0.4]{PixelNeighborhood}
+\caption{The 6-neighborhood considered around each pixel}
+\label{fig:pixel_neighborhood}
+\end{figure}
 
-\subsection{Curvature adaptive sampling}
-In order to preserve the fine details during the sampling process, it would be interesting to sample more densely the surface areas where the surface curvature is high (representing high changes in the normal field). For this, the idea is to consider the "normalized" Gaussian curvature as probability density function, giving a higher probability to points in areas of high absolute curvature, and a lower probability to points in areas of low absolute curvature.
+% \subsection{Curvature adaptive sampling}
+% In order to preserve the fine details during the sampling process, it would be interesting to sample more densely the surface areas where the surface curvature is high (representing high changes in the normal field). For this, the idea is to consider the "normalized" Gaussian curvature as probability density function, giving a higher probability to points in areas of high absolute curvature, and a lower probability to points in areas of low absolute curvature.
 
-\arnaud{INSERT GEOMETRIC GAUSSIAN CURVATURE ADAPTIVE SAMPLING}
-\arnaud{Subsection incomplete, need an explanation on curvature estimation from the normals (so adding also an explanation on the normal computation using depthmap connectivity and 3D positions)}
+% \arnaud{INSERT GEOMETRIC GAUSSIAN CURVATURE ADAPTIVE SAMPLING}
+% \arnaud{Subsection incomplete, need an explanation on curvature estimation from the normals (so adding also an explanation on the normal computation using depthmap connectivity and 3D positions)}
 
 \section{Voronoi diagram generation and Lloyd relaxation}
 \label{sec:lloyd_relaxation}
@@ -232,11 +291,11 @@ This algorithm is decomposed into two steps :
 Those steps are repeated until the sites stop moving (in practice, the process is stopped when the mean displacement is below a given threshold).
 
 \subsection{Voronoi diagram generation}
-Voronoi diagrams \arnaud{(add citation)} are a partition of a space $\mathbb{R}^d$ in a set of convex cells $V_S(v_i)$ from $k$ sites where every element contained in the cell $V_S(v_i)$ is closer from the site $v_i$ than from any other site $v_j$
+Voronoi diagrams \arnaud{(add citation)} are a partition of a space $\mathbb{R}^n$ in a set of convex cells $V_S(v_i)$ from $k$ sites where every element contained in the cell $V_S(v_i)$ is closer from the site $v_i$ than from any other site $v_j$
 
 \begin{equation}
 \label{eq:voronoi_cell}
-	V_S(v_i) = \{ x \in \mathbb{R}^d, \forall p \in S\, d(v_i,p) \leq d(v_j,p), j \neq i\},
+	V_S(v_i) = \{ x \in \mathbb{R}^n, \forall p \in S\, d(v_i,p) \leq d(v_j,p), j \neq i\},
 \end{equation}
 
 where $d$ is a distance metric. Generally, the euclidean distance metric is used to partition the domain, however it is possible to use other distance metrics (Manhattan distance, geodesic distance, ...), that will generate other partitions, depending on the needs.
@@ -281,15 +340,15 @@ In our case, some configurations cannot happen.
 
 Those conditions are verified after each Voronoi diagram computation. 
 
-\subsubsection{Power diagram from Gaussian curvature}
-Power diagrams are an extension of Voronoi diagrams to represent the fact that some sites can have a higher importance than others, for them to cover a larger area with respect to their neighbors. Similarly to what has been done for the poisson sampling in Sec.\ref{sec:poisson_sampling}, where the probability density function has been weighted by the absolute Gaussian curvature of the surface, it is possible to weight the influence of the Voronoi sites by the absolute Gaussian curvature, in order to create smaller cells (smaller weight) around the surface areas which have a high absolute curvature.
+% \subsubsection{Power diagram from Gaussian curvature}
+% Power diagrams are an extension of Voronoi diagrams to represent the fact that some sites can have a higher importance than others, for them to cover a larger area with respect to their neighbors. Similarly to what has been done for the poisson sampling in Sec.\ref{sec:poisson_sampling}, where the probability density function has been weighted by the absolute Gaussian curvature of the surface, it is possible to weight the influence of the Voronoi sites by the absolute Gaussian curvature, in order to create smaller cells (smaller weight) around the surface areas which have a high absolute curvature.
 
-\begin{equation}
-\label{eq:power_cell}
-	V_S(v_i) = \{ x \in \mathbb{R}^d, \forall p \in S\, d(v_i,p) - w_i \leq d(v_j,p) - w_j\}
-\end{equation}
+% \begin{equation}
+% \label{eq:power_cell}
+% 	V_S(v_i) = \{ x \in \mathbb{R}^n, \forall p \in S\, d(v_i,p) - w_i \leq d(v_j,p) - w_j\}
+% \end{equation}
 
-\arnaud{Subsubsection incomplete : more explanation about the way to compute the weights (using the curvature values) in order for the Voronoi cells size to vary smoothly.}
+% \arnaud{Subsubsection incomplete : more explanation about the way to compute the weights (using the curvature values) in order for the Voronoi cells size to vary smoothly.}
 
 \subsection{Lloyd relaxation}
 Now that each valid pixel of the depthmap is included in a Voronoi cell, sites are going to be moved, in order for them to be more evenly spaced locally.
@@ -319,11 +378,21 @@ In our discrete case (where the domain is a depthmap), the integral can be re-wr
 
 \section{Surface triangulation}
 \label{sec:surface_triangulation}
-Before triangulating, we need to define whether Voronoi cells belong to the same neighborhood (same surface area) or not. In comparison to the typical Delaunay dual-triangulation obtained from the Voronoi diagram, here we don't want every Voronoi cells touching each other to be linked by an edge. Some cells belong to different surface areas and then shouldn't be connected together.
+Before triangulating, we need to define whether Voronoi cells belong to the same neighborhood (same surface area) or not. In comparison to the typical Delaunay dual-triangulation obtained from the Voronoi diagram, here we don't want every Voronoi cells having a common frontier to be linked by an edge. Some cells belong to different surface areas and then shouldn't be connected together.
 For this we will use the border that was constructed in \ref{sec:border_marking}.
-We consider that two Voronoi cells are belonging to the same neighborhood if there is at least one "non-border" pixel in one of those cells that belongs to the 1-ring neighborhood of a non-border pixel of the other cell.
+We consider that two Voronoi cells $V_i$ and $V_j$ are belonging to the same neighborhood if there is no border separating them, meaning that there exists a non-empty set of non-border pixels belonging to $V_i$ which are neighbor (considering the 6-neighborhood we defined) to at least 1 pixel of the non-border pixels belonging to $V_j$.
 
-\arnaud{ADD FIGURE VORONOI CELL NEIGHBORHOOD}
+\begin{figure}[ht]
+\centering
+\scalebox{0.05}{
+\begin{tikzpicture}[spy using outlines={circle,red,magnification=7.5,size=40cm, connect spies}]
+\node {\pgfimage[interpolate=false]{Images/VoronoiDiagram3DBordersNeighborhood-Garuda}};
+\spy on (4.25,-2.75) in node [left] at (100,-2.75);
+\end{tikzpicture}
+}
+\caption{Neighborhood of a Voronoi cell (in yellow) $V$. If all the cells that have a common frontier with $V$, the cells colored in green belong to the neighborhood of the cell, whereas the ones colored in red don't.}
+\label{fig:voronoi_cell_neighborhood}
+\end{figure}
 
 \arnaud{Section incomplete}
 
