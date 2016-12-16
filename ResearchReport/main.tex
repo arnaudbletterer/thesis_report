@@ -387,7 +387,7 @@ In our discrete case (where the domain is a depthmap), the integral can be re-wr
 \label{sec:surface_triangulation}
 Before triangulating, we need to define whether Voronoi cells belong to the same neighborhood (same surface area) or not. In comparison to the typical Delaunay dual-triangulation obtained from the Voronoi diagram, here we don't want to connect by an edge every pair of Voronoi cells having a common frontier in 2D. Some cells belong to different surface areas and then shouldn't be linked together.
 For this we will use the borders that were constructed in \ref{sec:border_marking}.
-We consider that two Voronoi cells $V_i$ and $V_j$ are belonging to the same neighborhood if there is no border separating them, meaning that there exists a non-empty set of non-border pixels belonging to $V_i$ which are neighbor (considering the 6-neighborhood we defined) to at least 1 pixel of the non-border pixels belonging to $V_j$.
+We consider that two Voronoi cells $V_i$ and $V_j$ are belonging to the same neighborhood if there is no border separating them, meaning that there exists a non-empty set of non-border pixels belonging to $V_i$ which are neighbor (considering the 6-neighborhood we defined) to at least 1 pixel of the pixels belonging to $V_j$.
 
 \begin{figure}[ht]
 \centering
@@ -407,7 +407,7 @@ This allow to generate a triangulation where only points belonging to the same s
 \begin{figure}[ht]
 \centering\includegraphics[scale=0.05]{VoronoiDiagram2D-Garuda}
 \centering\includegraphics[scale=0.05]{Triangulation2D-Garuda}
-\centering\includegraphics[scale=0.05]{Triangulation2DEmbed-Garuda}
+\centering\includegraphics[scale=0.05]{Triangulation2DEmbedded-Garuda}
 \caption{Voronoi diagram (a) and triangulation obtained as an altered dual representation of the Voronoi diagram (b).}
 \label{fig:voronoi_diagram_triangulation}
 \end{figure}
@@ -437,7 +437,7 @@ Principal curvatures measure how much the surface bends in the two orthogonal di
 
 The Gaussian curvature is an intrinsic measure of the curvature of a surface. 
 As stated by Gauss in \cite{Gau28} through his \textit{theorema egregium}, the Gaussian curvature of an embedded smooth surface in $\mathbb{R}^3$ is invariant under local isometries.
-This means that no matter how the surface is bent, its total Gaussian curvature remains the same, and is related to the Euler Characteristic, based on the topology of the surface.
+This means that no matter how the surface is bent, its total Gaussian curvature remains the same, and is related to the Euler characteristic, based on the topology of the surface.
 
 \subsection{Gaussian curvature approximation}
 In \cite{MMPB02}, an approximation of Gaussian curvature is given by using the vertex angular deficit expression :
