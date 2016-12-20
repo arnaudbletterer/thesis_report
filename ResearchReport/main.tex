@@ -153,6 +153,11 @@ Moreover, this introduces a remeshing error between the reconstructed mesh and t
 
 Many 3D acquisition devices do not only provide a 3D point cloud at the output of an acquisition. They can also provide 2D parameterizations of a scene from the point of view of a scanner during the acquisition process, in the form of a depthmap (Figure \ref{fig:depthmap_point_cloud}(a)).
 
+Depthmaps are 2D images, where each pixel represent a point in the scene acquired. This particular structure offers a natural connectivity through the point cloud, where neighboring pixels represent neighboring points on the acquired surface.
+Taking this information in consideration, it seems natural to consider this connectivity when it comes to reconstruct the surface underlying the point cloud. 
+In this method, we will show a method to reconstruct a semi-regular surface reconstruction algorithm, taking as an input a depthmap and a parametrization function, and reconstructing a semi-regular mesh.
+The particularities of the method is that every step is applied in the parametric domain, which simplifies most of the algorithm applied, and the surface is only embed in 3D at the end of the algorithm, using the associated parametrization function.
+
 \begin{figure}[ht]
 \centering\includegraphics[scale=0.05]{DepthMap-Garuda}
 \centering\includegraphics[scale=0.12]{PointCloud-Garuda}
@@ -172,7 +177,10 @@ Figure \ref{fig:general_steps} represents the different steps of our method used
 \label{fig:general_steps}
 \end{figure}
 
-Before any step is applied a first border detection step is applied in order to identify parts ot the depthmap where two close pixels represent points on different surface areas (Section \ref{sec:border_marking}). Then a Poisson-disk sampling is applied on the depthmap (Section \ref{sec:poisson_sampling}) that will generate the initial sites for a Lloyd relaxation procedure (Section \ref{sec:lloyd_relaxation}). Then the obtained Voronoi diagram will be transformed into a 2D triangulation, considering an altered dual representation (which takes into account the borders detected at the beginning). Finally, from this 2D triangulation, different levels of resolution are reconstructed using a 1-to-4 face subdivision approach (Section \ref{sec:surface_subdivision}).
+A Poisson-disk sampling is applied on the depthmap (Section \ref{sec:poisson_sampling}) that will generate the initial sites for a Lloyd relaxation procedure (Section \ref{sec:lloyd_relaxation}). 
+Then the obtained Voronoi diagram will be transformed into a 2D triangulation, considering an altered dual representation (taking into account parts identified of the depthmap where two neighboring pixels represent points on different surface areas (Section \ref{sec:border_marking})). 
+Finally, from this 2D triangulation, different levels of resolution are reconstructed using a 1-to-4 face subdivision approach (Section \ref{sec:surface_subdivision}).
+Finally the reconstructed surface is obtained by embedding the different 2D triangulations obtained in 3D.
 
 \section{Border marking, labeling and routing}
 \label{sec:border_marking}
@@ -206,7 +214,9 @@ To avoid this, we present a method to mark the borders, identify each of them un
 \subsection{Border marking}
 First, we mark all the pixels of the depthmap that do not fulfill a local depth-discontinuity condition. We consider a depth-discontinuity as being an important change of depth in at least one direction (horizontal, vertical or diagonal).
 
-During that step, we are defining how points would be triangulated if a mesh was to be constructed between neighboring pixels over the whole depthmap. For this, we consider an arbitrary connectivity pattern, connecting one pixel to 6 of its neighbors, and will use that pattern to consider the possible neighbors of a point (Figure \ref{fig:pixel_neighborhood}. This pattern will be used during the following neighborhood considerations.
+During that step, we are defining how points would be triangulated if a mesh was to be constructed between neighboring pixels over the whole depthmap. 
+For this, we consider an arbitrary connectivity pattern, connecting one pixel to 6 of its neighbors, and will use that pattern to consider the possible neighbors of a point (Figure \ref{fig:pixel_neighborhood}). 
+This pattern will be used during the following neighborhood considerations.
 
 \begin{figure}[ht]
 \centering\includegraphics[scale=0.4]{PixelNeighborhood}
@@ -226,24 +236,32 @@ Now that borders have been indentified, we need to label them in order to be abl
 
 Each border is represented as a list, characterizing the path from pixel to pixel, from the beginning until the end of the border.
 
-We decide to use a region-growing process. Starting from a pixel that has been marked as a border, we try to find the next pixel defining the same border. When we consider the global triangulation over the depthmap, we search the next vertex along the border of the triangulation, considering oriented faces.
+We decide to use a region-growing process. 
+Starting from a pixel that has been marked as a border, we try to find the next pixel defining the same border. 
+When we consider the global triangulation over the depthmap, we search the next vertex along the border of the triangulation, considering oriented faces.
 When this vertex has been found, it is added to the current border list, and being processed, to find the next pixel of the border after him.
 When there is no more pixel than can be added to the current border, the border is considered as complete.
 
 At the initialization, every pixel marked as a border is added to a list. Until the list is not empty the first pixel is treated and removed from the list. If the pixel has already been labeled, then it is ignored, and the next one is considered instead. If the pixel isn't already labeled it is used as the starting pixel from the algorithm described above.
 
+\begin{figure}[ht]
+\centering
+\includegraphics[scale=0.3]{PixelTriangulationBorder}
+\caption{Implicit triangulation of a depthmap constructed when finding the border pixels. Darker pixels represent background, lighter and orange represent the object, and orange pixels alone represent the pixels marked as "borders".
+Edges in orange are the edges defining the border of the triangulation.}
+\label{fig:border_triangulation}
+\end{figure}
+
 \section{Poisson-disk sampling of the depthmap}
 \label{sec:poisson_sampling}
 
-In semi-regular triangle remeshing, to construct a semi-regular mesh from an irregular one, one method consists in constructing a base mesh, i.e. a low resolution version of the irregular one and subdividing it recursively (and projecting the generated vertices onto the original surface) \cite{PRS15}. Our work is inspired by those methods, to construct the base mesh by sampling the depthmap (which is a discrete representation of the acquired surface).
+In semi-regular triangle remeshing, to construct a semi-regular mesh from an irregular one, one method consists in constructing a base mesh, i.e. a low resolution version of the irregular one and subdividing it recursively (and projecting the generated vertices onto the original surface) \cite{PRS15}. Our work is inspired by those methods, constructing first the base mesh (from a set of samples acquired on the surface, i.e pixels on the depthmap) and the reconstructing the different levels of resolution.
 
 To obtain a good distribution of the base vertices over the depthmap, we use a poisson-disk sampling, as it has been shown to be one of the best sampling patterns for many applications. 
 We use a dart-throwing approach to choose the samples, combined with an region-growing process through Dijkstra's algorithm \cite{Dij59} to compute the disks areas.
-
-To preserve the holes that have been detected, we first sample each border. We take 3 samples per border, this ensures that every hole (which is delimited by a border, by construction) will be preserved during the generation of the initial triangulation.
-
-Then, we compute a connectivity graph over the depthmap. Each pixel can have up to 6 neighbors (with respect to the triangulation pattern chosen at the beginning).
-An egde exists between two pixels if they are not separated by a border.
+We compute a connectivity graph over the depthmap. Each pixel can have up to 6 neighbors (with respect to the triangulation pattern chosen at the beginning).
+An edge is created between every pair of neighboring pixels, only the ones being part of different borders are not connected together. 
+The weight of each edge is chosen depending on the metric considered.
 
 \subsection{Uniform sampling}
 This method uses the 3D coordinates of points (where each point is a pixel embedded in 3D using the depth information stored at that pixel) and weights each edge using the euclidean distance between both points.
@@ -265,12 +283,6 @@ For example, on the (Figure \arnaud{ADD FIGURE SHOWING THE SAMPLING DENSITY DIFF
 
 Instead of sampling a point cloud uniformly in 3D, we suggest to take the local sampling density into account. In other words, rather than computing disks with an uniform radius in 3D, we constrain each disk to have an uniform radius in 2D.
 Interestingly, this can easily be obtained by sampling the depthmap without considering 3D geodesic distances, i.e. doing a classical Poisson-disk sampling on an discretized planar domain, using a Dart Throwing approach for example.
-
-\begin{figure}[ht]
-\centering\includegraphics[scale=0.4]{PixelNeighborhood}
-\caption{The 6-neighborhood considered around each pixel}
-\label{fig:pixel_neighborhood}
-\end{figure}
 
 % \subsection{Curvature adaptive sampling}
 % In order to preserve the fine details during the sampling process, it would be interesting to sample more densely the surface areas where the surface curvature is high (representing high changes in the normal field). For this, the idea is to consider the "normalized" Gaussian curvature as probability density function, giving a higher probability to points in areas of high absolute curvature, and a lower probability to points in areas of low absolute curvature.
