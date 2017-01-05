@@ -134,7 +134,7 @@ and Cartesian coordinates can be recovered from those using :
 	z = r\cos\phi
 \end{equation}
 
-In the depthmap, the intensity stored for each pixel is the value of $r$. Knowing $\Delta\theta$ and $\Delta\phi$ (representing the difference of azimuthal and polar angles respectively between two consecutive points), one can recover $\theta$ and $\phi$ for each pixel of the depthmap, taking in consideration the structure of the depthmaps (2D matrices). 
+In depthmaps, the intensity stored for each pixel is the value of $r$. Knowing $\Delta\theta$ and $\Delta\phi$ (representing the difference of azimuthal and polar angles respectively between two consecutive points), one can recover $\theta$ and $\phi$ for each pixel of the depthmap, taking in consideration the structure of the depthmaps (2D matrices). 
 Using Equation\eqref{eq:spherical_to_cartesian}, it is possible to recover 3D positions of points from intensity values contained in the depthmaps.
 
 \section{Introduction}
@@ -147,7 +147,7 @@ Nowadays scanners are able to sample scenes with hundreds of million of points. 
 Specific surface reconstruction algorithms 
 
 To resolve the interactive visualization problem, one common approach used is to modify the connectivity of the reconstructed mesh, in order to be able to easily decimate and refine it, depending on the distance of the visualization of the object to the viewer.
-To do so, most of the methods find a parameterization of the mesh, and having a coarse approximation of the original mesh, which is called the base mesh, recursively subdivide every triangle of this base mesh and reproject points over the original surface. A survey has recently been done to categorize the different methods \cite{PRS15}.
+To do so, most of the methods find a parameterization of the mesh, and from a coarse approximation of the original mesh, which is called the base mesh, subdivide recursively triangles of this base mesh and reproject points over the original surface. A survey has recently been done to categorize the different methods \cite{PRS15}.
 However this method requires to find a "good" parameterization of the surface, which can be a difficult problem, especially when it comes to handle objects having a really high gender.
 Moreover, this introduces a remeshing error between the reconstructed mesh and the remeshed one.
 
@@ -425,7 +425,7 @@ This allow to generate a triangulation where only points belonging to the same s
 \begin{figure}[ht]
 \centering\includegraphics[scale=0.05]{VoronoiDiagram2D-Garuda}
 \centering\includegraphics[scale=0.05]{Triangulation2D-Garuda}
-\centering\includegraphics[scale=0.05]{Triangulation2DEmbedded-Garuda}
+\centering\includegraphics[scale=0.13]{Triangulation2DEmbedded-Garuda}
 \caption{Voronoi diagram (a) and triangulation obtained as an altered dual representation of the Voronoi diagram (b).}
 \label{fig:voronoi_diagram_triangulation}
 \end{figure}
