@@ -189,11 +189,14 @@ A depthmap is a 2D parameterization of a 3D scene visualized from a specific poi
 
 This link between depth values and 3D coordinates motivated us using depthmaps as a parameterization domain to apply algorithm on point clouds, considering the implicit connectivity between pixels to do local computations requesting the consideration of neighboring points.
 
-If most of the time it is correct to consider that neighboring pixels in a depthmap are also neighbors on the surface (with respect to the sampling density of the acquisition), it is not the case along depth discontinuities.
-Since an acquisition is done from a specific position and orientation, they can only represent visible points from that specific point of view. 
-Thus many surface areas can be occluded, and different surface areas could be considered touching each other in the depthmap.
+If most of the time it is correct to consider that neighboring pixels in a depthmap are also neighbors on the surface (with respect to the sampling density of the acquisition), it is not the case along depth discontinuities (Fig \ref{fig:depth_discontinuity}).
+Since an acquisition is done from a specific position and orientation, it can only represent visible points from that specific point of view. 
+Thus many surface areas can be occluded, and different surface areas could be considered touching each other in the depthmap, even if they are far on the surface.
 
 To avoid this, we present a method to mark the borders, identify each of them uniquely and store the path from the beginning until the end of each border.
+
+Many methods have been developed to detect borders and to segmentate  however those techniques only want to separate different areas of the image, or image parts where specific processing should be applied.
+In our case, we not only want to detect borders, we also want to store the path that each border follows.
 
 \begin{figure}
 \centering
@@ -214,7 +217,7 @@ To avoid this, we present a method to mark the borders, identify each of them un
 \subsection{Border marking}
 First, we mark all the pixels of the depthmap that do not fulfill a local depth-discontinuity condition. We consider a depth-discontinuity as being an important change of depth in at least one direction (horizontal, vertical or diagonal).
 
-During that step, we are defining how points would be triangulated if a mesh was to be constructed between neighboring pixels over the whole depthmap. 
+During that step, we are defining how points would be triangulated if a mesh was going to be constructed between neighboring pixels over the whole depthmap. 
 For this, we consider an arbitrary connectivity pattern, connecting one pixel to 6 of its neighbors, and will use that pattern to consider the possible neighbors of a point (Figure \ref{fig:pixel_neighborhood}). 
 This pattern will be used during the following neighborhood considerations.
 
@@ -224,10 +227,10 @@ This pattern will be used during the following neighborhood considerations.
 \label{fig:pixel_neighborhood}
 \end{figure}
 
-For each pixel $p$, we search to know if there a high intensity variation with respect to its neighborhood. If this is the case, it means that the pixels do not belong the same surface area, and then need to be separated for the further processings.
-We consider that each pixel has at least one neighbor in each direction belonging to the same surface area (low intensity variation). Knowing that, we evaluate how much difference there is between the 2 neighbors in each direction (top and bottom, left and right, bottom-left and top-right.
-For this, we compute a mean intensity variation (MIV) per direction, by dividing the intensity of the current pixel with the one of each neighbor belonging to that direction. We consider that if the variation of intensity between $p$ and one of his neighbor is superior to the computed MIV (+ or - $k$\%), then there exists a border between $p$ and this specific neighbor. In all of our experiments we used $k = 3$ and found it to give good results.
-When a pixel $p$ detects that this intensity variation is above the computed threshold for a certain pixel $p_i \in \mathcal{N}(p)$
+For each pixel $p$, we search to know if there a high intensity variation with respect to each of his neighbors. If this is the case, it means that the two pixels do not belong the same surface area, and then need to be separated for the further processings.
+But instead of using a fixed threshold over the entire depthmap, we consider a variable parameter, which value will vary with respect to the distance from the camera.
+This comes from the fact that 3D scanners acquires a higher density of points when objects are closer than when they are further. 
+Thus by weighting a chosen threshold with pixel intensities, we are able to have a threshold that will vary with respect to the depth, i.e it will be smaller for high density areas, and bigger for low density areas.
 
 Since this is a highly parallelizable algorithm (each operation is executed indepently for each pixel), we implemented it using GPGPU methods.
 
@@ -238,11 +241,13 @@ Each border is represented as a list, characterizing the path from pixel to pixe
 
 We decide to use a region-growing process. 
 Starting from a pixel that has been marked as a border, we try to find the next pixel defining the same border. 
-When we consider the global triangulation over the depthmap, we search the next vertex along the border of the triangulation, considering oriented faces.
+This is equivalent as searching the next vertex along the border of the triangulation, considering oriented faces.
 When this vertex has been found, it is added to the current border list, and being processed, to find the next pixel of the border after him.
-When there is no more pixel than can be added to the current border, the border is considered as complete.
+When there is no more pixel than can be added to the current border, the border is considered as completed.
 
-At the initialization, every pixel marked as a border is added to a list. Until the list is not empty the first pixel is treated and removed from the list. If the pixel has already been labeled, then it is ignored, and the next one is considered instead. If the pixel isn't already labeled it is used as the starting pixel from the algorithm described above.
+At the initialization, every pixel marked as a border is added to a list. Until the list is not empty the first pixel is treated and removed from the list. 
+If the pixel has already been labeled, then it is ignored, and the next one is considered instead. 
+If the pixel isn't already labeled it is used as the starting pixel of a new border, following the steps.
 
 \begin{figure}[ht]
 \centering
@@ -387,7 +392,7 @@ The centroid $z_i^*$ of the Voronoi cell $V_i$ can be obtained using the followi
 \begin{equation}
 		z_i^* = \begin{cases}
 		Proj(\frac{\int_{V_S(v_i)} x\rho(x)\,dx}{\int_{V_S(v_i)} \rho(x)\,dx}) , & \text{if $|B_{V_i}| > 0$}, \\
-		\frac{\int_{V_S(v_i)} x\rho(x)\,dx}{\int_{V_S(v_i)} \rho(x)\,dx}), & \text{otherwise}, 
+		\frac{\int_{V_S(v_i)} x\rho(x)\,dx}{\int_{V_S(v_i)} \rho(x)\,dx}, & \text{otherwise}, 
 		\end{cases}
 \end{equation}
 
