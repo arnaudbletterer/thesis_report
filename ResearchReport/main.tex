@@ -143,15 +143,17 @@ Using Equation\eqref{eq:spherical_to_cartesian}, it is possible to recover 3D po
 \section{Related work}
 \label{sec:related_work}
 
-Nowadays scanners are able to sample scenes with hundreds of million of points. Such amount of samples makes the surface reconstruction and visualization a challenging problem.
-Specific surface reconstruction algorithms 
+Nowadays scanners are able to sample scenes with hundreds of million of points in a single scan. 
+Such amount of samples makes surface reconstruction and visualization a challenging problem.
 
-To resolve the interactive visualization problem, one common approach used is to modify the connectivity of the reconstructed mesh, in order to be able to easily decimate and refine it, depending on the distance of the visualization of the object to the viewer.
-To do so, most of the methods find a parameterization of the mesh, and from a coarse approximation of the original mesh, which is called the base mesh, subdivide recursively triangles of this base mesh and reproject points over the original surface. A survey has recently been done to categorize the different methods \cite{PRS15}.
+To solve the interactive visualization problem, one common approach used is to modify the connectivity of the reconstructed mesh, in order to be able to easily decimate and refine it, depending on the distance of the visualization of the object to the viewer.
+To do so, most of the methods find a parameterization of the mesh and from a coarse approximation of the original mesh, which is called the base mesh, subdivide recursively triangles of this base mesh and reproject points over the original surface. 
+A survey has recently been done to categorize the different methods \cite{PRS15}.
 However this method requires to find a "good" parameterization of the surface, which can be a difficult problem, especially when it comes to handle objects having a really high gender.
 Moreover, this introduces a remeshing error between the reconstructed mesh and the remeshed one.
 
-Many 3D acquisition devices do not only provide a 3D point cloud at the output of an acquisition. They can also provide 2D parameterizations of a scene from the point of view of a scanner during the acquisition process, in the form of a depthmap (Figure \ref{fig:depthmap_point_cloud}(a)).
+Many 3D acquisition devices do not only provide a 3D point cloud at the output of an acquisition. 
+They can also provide 2D parameterizations of a scene from the point of view of a scanner during the acquisition process, in the form of a depthmap (Figure \ref{fig:depthmap_point_cloud}(a)).
 
 Depthmaps are 2D images, where each pixel represent a point in the scene acquired. This particular structure offers a natural connectivity through the point cloud, where neighboring pixels represent neighboring points on the acquired surface.
 Taking this information in consideration, it seems natural to consider this connectivity when it comes to reconstruct the surface underlying the point cloud. 
@@ -195,8 +197,8 @@ Thus many surface areas can be occluded, and different surface areas could be co
 
 To avoid this, we present a method to mark the borders, identify each of them uniquely and store the path from the beginning until the end of each border.
 
-Many methods have been developed to detect borders and to segmentate  however those techniques only want to separate different areas of the image, or image parts where specific processing should be applied.
-In our case, we not only want to detect borders, we also want to store the path that each border follows.
+Many methods have been developed to detect borders and to segmentate however those techniques only seek to separate different areas of the image, or image parts where specific processing should be applied.
+In our case, we want not only to detect borders, but also to store the path that each border follows.
 
 \begin{figure}
 \centering
@@ -218,8 +220,7 @@ In our case, we not only want to detect borders, we also want to store the path 
 First, we mark all the pixels of the depthmap that do not fulfill a local depth-discontinuity condition. We consider a depth-discontinuity as being an important change of depth in at least one direction (horizontal, vertical or diagonal).
 
 During that step, we are defining how points would be triangulated if a mesh was going to be constructed between neighboring pixels over the whole depthmap. 
-For this, we consider an arbitrary connectivity pattern, connecting one pixel to 6 of its neighbors, and will use that pattern to consider the possible neighbors of a point (Figure \ref{fig:pixel_neighborhood}). 
-This pattern will be used during the following neighborhood considerations.
+For this, we consider an arbitrary connectivity pattern, connecting one pixel to 6 of its neighbors (Figure \ref{fig:pixel_neighborhood}). 
 
 \begin{figure}[ht]
 \centering\includegraphics[scale=0.4]{PixelNeighborhood}
@@ -229,10 +230,26 @@ This pattern will be used during the following neighborhood considerations.
 
 For each pixel $p$, we search to know if there a high intensity variation with respect to each of his neighbors. If this is the case, it means that the two pixels do not belong the same surface area, and then need to be separated for the further processings.
 But instead of using a fixed threshold over the entire depthmap, we consider a variable parameter, which value will vary with respect to the distance from the camera.
-This comes from the fact that 3D scanners acquires a higher density of points when objects are closer than when they are further. 
+This comes from the fact that 3D scanners acquire a higher density of points when objects are closer than when they are further. 
 Thus by weighting a chosen threshold with pixel intensities, we are able to have a threshold that will vary with respect to the depth, i.e it will be smaller for high density areas, and bigger for low density areas.
 
-Since this is a highly parallelizable algorithm (each operation is executed indepently for each pixel), we implemented it using GPGPU methods.
+To understand how the threshold is weighted, it is interesting to take a look at the distance variation between the embedding of two specific pixels when their depth progressively increases (Figure \ref{fig:distance_depth_variation}).
+
+\begin{figure}[ht]
+  \centering
+  \def\svgwidth{200pt}
+  \input{Images/ThresholdVariation.pdf_tex}
+  \caption{Distance variation between two points at the same depth, by progressively increasing their depth.}
+  \label{fig:distance_depth_variation}
+\end{figure}
+
+ From the "side-splitter theorem", we know that since $BE$ is parallel to $CD$ then we have :
+
+\begin{equation}
+	\frac{|AB|}{|AC|} = \frac{|BE|}{|CD|},
+\end{equation}
+
+and that the distance between two specific points linearly increases when their depth increases. Thus the intensity threshold should be linearly proportional to the depth.
 
 \subsection{Border labeling and routing}
 Now that borders have been indentified, we need to label them in order to be able to consider them independently. 
@@ -240,14 +257,14 @@ Now that borders have been indentified, we need to label them in order to be abl
 Each border is represented as a list, characterizing the path from pixel to pixel, from the beginning until the end of the border.
 
 We decide to use a region-growing process. 
-Starting from a pixel that has been marked as a border, we try to find the next pixel defining the same border. 
-This is equivalent as searching the next vertex along the border of the triangulation, considering oriented faces.
-When this vertex has been found, it is added to the current border list, and being processed, to find the next pixel of the border after him.
+Starting from a pixel that has been marked as a border, we search the next pixel defining the same border. 
+This is equivalent as searching the next vertex along the border of the triangulation, by considering that faces are oriented.
+When this pixel has been found, it is added to the current border list, and being processed, to find the next pixel of the border after him.
 When there is no more pixel than can be added to the current border, the border is considered as completed.
 
-At the initialization, every pixel marked as a border is added to a list. Until the list is not empty the first pixel is treated and removed from the list. 
-If the pixel has already been labeled, then it is ignored, and the next one is considered instead. 
+At the initialization, every pixel marked as a border is added to a list. Until this list is not empty, the first pixel is treated and removed from the list. 
 If the pixel isn't already labeled it is used as the starting pixel of a new border, following the steps.
+If the pixel has already been labeled, then it is ignored, and the next one is considered instead. 
 
 \begin{figure}[ht]
 \centering
