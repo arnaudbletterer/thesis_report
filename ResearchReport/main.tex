@@ -140,25 +140,36 @@ Using Equation\eqref{eq:spherical_to_cartesian}, it is possible to recover 3D po
 \section{Introduction}
 \label{sec:introduction}
 
+Nowadays, point clouds acquired by 3D scanners are consituted by hundreds of million of points, even just in a single scan.
+Acquired surfaces are generally oversampled, and manipulating such amount of data becomes a challenging problem, even just for direct visualization.
+Hence, simplification of such data becomes compulsory in order be efficiently managed.
+
 \section{Related work}
 \label{sec:related_work}
 
-Nowadays scanners are able to sample scenes with hundreds of million of points in a single scan. 
-Such amount of samples makes surface reconstruction and visualization a challenging problem.
+To solve the interactive visualization and compression problems of highly detailed meshes, one common approach considered consists in modifying the connectivity of the reconstructed mesh, to obtain a progressive representation of the surface, that will be refined or coarsened depending on the point of view of the observer in the scene visualized.
+To do so, a category of methods consists into a re-triangulation of the mesh, in order to obtain an \textit{implicit connectivity}. 
+After obtaining a coarse approximation of an original mesh, which is called the base mesh, triangles of this mesh are recursively subdivided and newly inserted points are projected on the surface.
+The obtained connectivity is implicit in the way that the only connectivity to store for the whole mesh is the one of the base mesh, the rest of the connectivity is obtained by a recursive subdivision of the triangles.
+A survey has recently been done to categorize the different semi-regular remeshing methods in \cite{PRS15}.
 
-To solve the interactive visualization problem, one common approach used is to modify the connectivity of the reconstructed mesh, in order to be able to easily decimate and refine it, depending on the distance of the visualization of the object to the viewer.
-To do so, most of the methods find a parameterization of the mesh and from a coarse approximation of the original mesh, which is called the base mesh, subdivide recursively triangles of this base mesh and reproject points over the original surface. 
-A survey has recently been done to categorize the different methods \cite{PRS15}.
-However this method requires to find a "good" parameterization of the surface, which can be a difficult problem, especially when it comes to handle objects having a really high gender.
-Moreover, this introduces a remeshing error between the reconstructed mesh and the remeshed one.
+Such representation is really suitable for compression purposes \cite{MLDH15} and gained a lot of attractivity over the last years to represent meshes containing a high amount of faces.
+However, to obtain such representation, it is necessary add a processing step to the surface reconstruction pipeline, namely \textit{surface remeshing}, with some difficult problems to overcome :
+\begin{itemize}
+	\item First of all, those methods require most of the time to find a "good" parameterization of the surface, which can be a difficult problem, especially when it comes to handle objects having a really high gender.
+	\item Secondly, this introduces a remeshing error between the original mesh and the re-triangulated one, because the new triangulation won't approximate as well the surface acquired.
+	\item Finally, this method involves a certain
+\end{itemize}
+
+Considering all of those aspects, we oriented our work into reconstructing a semi-regular mesh directly from the acquired data.
 
 Many 3D acquisition devices do not only provide a 3D point cloud at the output of an acquisition. 
 They can also provide 2D parameterizations of a scene from the point of view of a scanner during the acquisition process, in the form of a depthmap (Figure \ref{fig:depthmap_point_cloud}(a)).
 
 Depthmaps are 2D images, where each pixel represent a point in the scene acquired. This particular structure offers a natural connectivity through the point cloud, where neighboring pixels represent neighboring points on the acquired surface.
 Taking this information in consideration, it seems natural to consider this connectivity when it comes to reconstruct the surface underlying the point cloud. 
-In this method, we will show a method to reconstruct a semi-regular surface reconstruction algorithm, taking as an input a depthmap and a parametrization function, and reconstructing a semi-regular mesh.
-The particularities of the method is that every step is applied in the parametric domain, which simplifies most of the algorithm applied, and the surface is only embed in 3D at the end of the algorithm, using the associated parametrization function.
+In this method, we show a method to reconstruct a progressive surface, taking as an input a depthmap and a parametrization function, and producing a semi-regular mesh.
+The particularities of the method is that every step is applied in the parametric domain, which simplifies most of the algorithms applied, and the surface is only embed in 3D at the end of the algorithm, using the associated parametrization function.
 
 \begin{figure}[ht]
 \centering\includegraphics[scale=0.05]{DepthMap-Garuda}
@@ -277,17 +288,17 @@ Edges in orange are the edges defining the border of the triangulation.}
 \section{Poisson-disk sampling of the depthmap}
 \label{sec:poisson_sampling}
 
-In semi-regular triangle remeshing, to construct a semi-regular mesh from an irregular one, one method consists in constructing a base mesh, i.e. a low resolution version of the irregular one and subdividing it recursively (and projecting the generated vertices onto the original surface) \cite{PRS15}. Our work is inspired by those methods, constructing first the base mesh (from a set of samples acquired on the surface, i.e pixels on the depthmap) and the reconstructing the different levels of resolution.
+In semi-regular triangle remeshing, to construct a semi-regular mesh from an irregular one, one method consists in constructing a base mesh, i.e. a low resolution version of the irregular one and subdividing it recursively (and projecting the generated vertices onto the original surface) \cite{PRS15}. Our work is inspired by those methods, constructing first a base mesh in 2D from a set of samples on the surface, i.e pixels on the depthmap, and then reconstructing the different levels of resolution by recursive subdivision.
 
-To obtain a good distribution of the base vertices over the depthmap, we use a poisson-disk sampling, as it has been shown to be one of the best sampling patterns for many applications. 
+To obtain a good distribution of the base vertices over the depthmap, we use a poisson-disk sampling \cite{Coo86}, as it has been shown to be one of the best sampling patterns for many applications. 
 We use a dart-throwing approach to choose the samples, combined with an region-growing process through Dijkstra's algorithm \cite{Dij59} to compute the disks areas.
-We compute a connectivity graph over the depthmap. Each pixel can have up to 6 neighbors (with respect to the triangulation pattern chosen at the beginning).
-An edge is created between every pair of neighboring pixels, only the ones being part of different borders are not connected together. 
+We compute a connectivity graph over the depthmap. Each pixel can have up to 6 neighbors, with respect to the triangulation pattern chosen at the beginning (Fig. \ref{fig:pixel_neighborhood}).
+An edge is created between every pair of neighboring pixels if they belong to the same surface area, meaning that they are not separated by a border. 
 The weight of each edge is chosen depending on the metric considered.
 
 \subsection{Uniform sampling}
-This method uses the 3D coordinates of points (where each point is a pixel embedded in 3D using the depth information stored at that pixel) and weights each edge using the euclidean distance between both points.
-By using Dijkstra's algorithm, we can then construct the shortest path between a source (center of a disk) and any point of the domain. 
+This method uses the 3D coordinates of points (where each point is a pixel embedded in 3D using the depth information stored at that pixel) and weights each edge using the euclidean distance between both points sharing this edge.
+By using Dijkstra's algorithm, we can then construct the shortest path between a source (center of a disk) and any point of the domain.
 By using this method, we consider Poisson disks (surface patches to be more precise) that have an uniform area in 3D.
 
 \begin{figure}[ht]
@@ -408,7 +419,7 @@ The centroid $z_i^*$ of the Voronoi cell $V_i$ can be obtained using the followi
 
 \begin{equation}
 		z_i^* = \begin{cases}
-		Proj(\frac{\int_{V_S(v_i)} x\rho(x)\,dx}{\int_{V_S(v_i)} \rho(x)\,dx}) , & \text{if $|B_{V_i}| > 0$}, \\
+		Proj_{B_{V_i}}(\frac{\int_{V_S(v_i)} x\rho(x)\,dx}{\int_{V_S(v_i)} \rho(x)\,dx}) , & \text{if $|B_{V_i}| > 0$}, \\
 		\frac{\int_{V_S(v_i)} x\rho(x)\,dx}{\int_{V_S(v_i)} \rho(x)\,dx}, & \text{otherwise}, 
 		\end{cases}
 \end{equation}
@@ -418,7 +429,7 @@ In our discrete case (where the domain is a depthmap), the integral can be re-wr
 
 \begin{equation}
 		z_i^* = \begin{cases}
-		Proj(\frac{\sum_{p_j \in V_S(v_i)} p_j\rho(p_j)}{\sum_{p_j \in V_S(v_i)} \rho(p_j)}) , & \text{if $|B_{V_i}| > 0$}, \\
+		Proj_{B_{V_i}}(\frac{\sum_{p_j \in V_S(v_i)} p_j\rho(p_j)}{\sum_{p_j \in V_S(v_i)} \rho(p_j)}) , & \text{if $|B_{V_i}| > 0$}, \\
 		\frac{\sum_{p_j \in V_S(v_i)} p_j\rho(p_j)}{\sum_{p_j \in V_S(v_i)} \rho(p_j)}, & \text{otherwise}, 
 		\end{cases}
 \end{equation}
@@ -437,7 +448,7 @@ We consider that two Voronoi cells $V_i$ and $V_j$ are belonging to the same nei
 \spy on (4.25,-2.75) in node [left] at (100,-2.75);
 \end{tikzpicture}
 }
-\caption{Neighborhood of a Voronoi cell (in yellow) $V$. In all the cells that have a common frontier with $V$, the cells colored in green belong to the neighborhood of the cell, whereas the ones colored in red don't.}
+\caption{Neighborhood of a Voronoi cell (in yellow) $V$. In all the cells that have a common frontier with $V$ in 2D, the cells colored in green belong to the neighborhood of the cell on the surface, whereas the ones colored in red don't.}
 \label{fig:voronoi_cell_neighborhood}
 \end{figure}
 
@@ -452,8 +463,12 @@ This allow to generate a triangulation where only points belonging to the same s
 \label{fig:voronoi_diagram_triangulation}
 \end{figure}
 
+\arnaud{Add a close-up view of }
+
 \section{Surface subdivision}
 \label{sec:surface_subdivision}
+
+
 
 
 %----------------------------------------------------------------------------------------
