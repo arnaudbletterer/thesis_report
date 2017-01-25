@@ -158,7 +158,7 @@ However, to obtain such representation, it is necessary add a processing step to
 \begin{itemize}
 	\item First of all, those methods require most of the time to find a "good" parameterization of the surface, which can be a difficult problem, especially when it comes to handle objects having a really high gender.
 	\item Secondly, this introduces a remeshing error between the original mesh and the re-triangulated one, because the new triangulation won't approximate as well the surface acquired.
-	\item Finally, this method involves a certain
+	\item Finally, this method has a certain cost in processing time, which can be non-negligible.
 \end{itemize}
 
 Considering all of those aspects, we oriented our work into reconstructing a semi-regular mesh directly from the acquired data.
@@ -254,7 +254,7 @@ To understand how the threshold is weighted, it is interesting to take a look at
   \label{fig:distance_depth_variation}
 \end{figure}
 
- From the "side-splitter theorem", we know that since $BE$ is parallel to $CD$ then we have :
+From the "side-splitter theorem", we know that since $BE$ is parallel to $CD$ then we have :
 
 \begin{equation}
 	\frac{|AB|}{|AC|} = \frac{|BE|}{|CD|},
@@ -306,7 +306,7 @@ By using this method, we consider Poisson disks (surface patches to be more prec
 \includegraphics[scale=0.05]{PoissonSampling3D-Garuda}
 \includegraphics[scale=0.05]{PoissonDisks3D-Garuda}
 \includegraphics[scale=0.12]{PoissonDisks3DEmbedded-Garuda}
-\caption{Poisson-disk sampling of the model Garuda considering disks with an uniform area in 3D (a) with their associated disks (b) and the same disks, but embedded in 3D (c)}
+\caption{Poisson-disk sampling of the Garuda model considering disks with an uniform area in 3D (a) with their associated disks (b) and the same disks, but embedded in 3D (c)}
 \label{fig:poisson_sampling_3d}
 \end{figure}
 
@@ -322,7 +322,7 @@ Interestingly, this can easily be obtained by sampling the depthmap without cons
 \includegraphics[scale=0.06]{PoissonSampling2D-Garuda}
 \includegraphics[scale=0.06]{PoissonDisks2D-Garuda}
 \includegraphics[scale=0.14]{PoissonDisks2DEmbedded-Garuda}
-\caption{Poisson-disk sampling of the model Garuda considering disks with an uniform area in 2D. Samples found (a) with their associated disks (b) and the same disks, but embedded in 3D (c)}
+\caption{Poisson-disk sampling of the Garuda model considering disks with an uniform area in 2D. Samples found (a) with their associated disks (b) and the same disks, but embedded in 3D (c)}
 \label{fig:poisson_sampling_2d}
 \end{figure}
 
@@ -345,7 +345,7 @@ This algorithm is decomposed into two steps :
 Those steps are repeated until the sites stop moving (in practice, the process is stopped when the mean displacement is below a given threshold).
 
 \subsection{Voronoi diagram generation}
-Voronoi diagrams \arnaud{(add citation)} are a partition of a space $\mathbb{R}^n$ in a set of convex cells $V_S(v_i)$ from $k$ sites where every element contained in the cell $V_S(v_i)$ is closer from the site $v_i$ than from any other site $v_j$
+Voronoi diagrams \cite{Vor08} are a partition of a space $\mathbb{R}^n$ in a set of convex cells $V_S(v_i)$ from $k$ sites where every element contained in the cell $V_S(v_i)$ is closer from the site $v_i$ than from any other site $v_j$
 
 \begin{equation}
 \label{eq:voronoi_cell}
@@ -389,8 +389,7 @@ He suggested to verify 5 different topological conditions over the configuration
 \end{figure}
 
 In our case, some configurations cannot happen.
-\textit{Nonzero genus} is not a possible cases, because by definition the depthmap represents the parameterization of the visible part of the scene. Thus the surface (or the multiple surface components) obtained after scanning have a zero genus and each Voronoi cell also, since each cell is a subset of the surface acquired.
-\arnaud{There must be others that do not apply, but I can't really understand the \textit{Single curve tile boundaries} and \textit{Multiple neighbor instances} statements for now.}
+\textit{Nonzero genus} is not a possible case, because by definition the depthmap represents the parameterization of the visible part of the scene. Thus the surface (or the multiple surface components) obtained after scanning have a zero genus and each Voronoi cell also, since each cell is a subset of the surface acquired.
 
 Those conditions are verified after each Voronoi diagram computation. 
 
@@ -463,13 +462,41 @@ This allow to generate a triangulation where only points belonging to the same s
 \label{fig:voronoi_diagram_triangulation}
 \end{figure}
 
-\arnaud{Add a close-up view of }
+\arnaud{Add a close-up view of triangulation considering borders}
+
+\arnaud{ADD ILLUSTRATION TRIANGULATION WITH/WITHOUT CONSIDERING BORDERS}
 
 \section{Surface subdivision}
 \label{sec:surface_subdivision}
 
+Now, to refine our base mesh, and obtain a progressive representation of the acquired data, we subdivide every triangles recursively, until reaching the same density as the original point cloud.
+To do so, we divide every edge into two edges, linking both by introducing a new vertex. The position of this vertex will depend on the subdivision filter applied \cite{PR08}.
+Here we will show an application considering an altered \textit{Mid-Edge subdivision} scheme.
+For the subdivision we consider two different cases :
+\begin{itemize}
+	\item If the currenly subdivided edge is composed of two border vertices (pixels that have been marked as belonging to the border) and that this edge is on the border of the current triangulation level (Figure ...a), then the newly inserted vertex is moved to the middle of the border (Figure ...b)
+	\item Otherwise, the classical Mid-Edge subdivision scheme is applied.
+\end{itemize}
 
+The subdivision process is done in the 2D domain, this means that newly inserted vertices are given a position in 2D, and their 3D position is recovered by embedding the pixel on which the new vertex is lying on.
+By doing so, we always project newly inserted vertices onto original ones (the ones that have been acquired), which are on the surface acquired.
 
+\arnaud{ADD ILLUSTRATION SUBDIVISION ON A BORDER}
+
+\section{Results}
+
+\arnaud{ADD RESULTS ABOUT COMPARISON WITH RESPECT TO RESOLUTION LEVELS (HAUSDORFF)}
+\arnaud{ADD RESULTS ABOUT COMPARISON WITH RESPECT TO NUMBER OF ITERATIONS (HAUSDORFF + TRIANGLE QUALITY)}
+\arnaud{ADD RESULTS ABOUT COMPARISON BETWEEN SEVERAL MESH RECONSTRUCTION ALGORITHMS (HAUSDORFF + VISUAL QUALITY)}
+\arnaud{ADD RESULTS ABOUT COMPARISON BETWEEN COMBINATION OF MESH RECONSTRUCTION ALGORITHM + REMESHING (HAUSDORFF + VISUAL QUALITY + EXECUTION TIME)}
+
+\section{Conclusion}
+
+We presented a new method to reconstruct a surface from a point cloud, in the form of a depthmap. 
+By taking advantage of the implicit connectivity between pixels of a depthmap (which represents points that have been acquired), we are able to recover the surface underlying the point cloud.
+This implicit connectivity also allows to approximate geodesics through the point cloud, by considering the depthmap as a graph, where edges are weighted by the 3D euclidean distance of neighboring points.
+Using that, a surfacic Voronoi diagram can be computed, whose dual representation creates a base mesh, a coarse approximation of the point cloud.
+By recursively sudviding triangles of this mesh, we generate a progressive structure allowing to display a mesh at different levels of resolution.
 
 %----------------------------------------------------------------------------------------
 %	BIBLIOGRAPHY
