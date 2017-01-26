@@ -288,7 +288,7 @@ Edges in orange are the edges defining the border of the triangulation.}
 \section{Poisson-disk sampling of the depthmap}
 \label{sec:poisson_sampling}
 
-In semi-regular triangle remeshing, to construct a semi-regular mesh from an irregular one, one method consists in constructing a base mesh, i.e. a low resolution version of the irregular one and subdividing it recursively (and projecting the generated vertices onto the original surface) \cite{PRS15}. Our work is inspired by those methods, constructing first a base mesh in 2D from a set of samples on the surface, i.e pixels on the depthmap, and then reconstructing the different levels of resolution by recursive subdivision.
+In semi-regular triangle remeshing, to construct a semi-regular mesh from an irregular one, one method consists in constructing a base mesh, i.e. a low resolution version of the irregular one, subdividing its triangles recursively and projecting the generated vertices onto the original surface \cite{PRS15}. Our work is inspired by those methods, constructing first a base mesh in 2D from a set of samples on the surface, i.e pixels on the depthmap, and then reconstructing the different levels of resolution by recursive subdivision.
 
 To obtain a good distribution of the base vertices over the depthmap, we use a poisson-disk sampling \cite{Coo86}, as it has been shown to be one of the best sampling patterns for many applications. 
 We use a dart-throwing approach to choose the samples, combined with an region-growing process through Dijkstra's algorithm \cite{Dij59} to compute the disks areas.
@@ -335,11 +335,13 @@ Interestingly, this can easily be obtained by sampling the depthmap without cons
 \section{Voronoi diagram generation and Lloyd relaxation}
 \label{sec:lloyd_relaxation}
 
-In order to even the sites positions, we apply a Lloyd relaxation scheme based on 3D geodesic distances, using the connectivity of the depthmap.
+In order to position more evenly the sites, we apply a Lloyd relaxation scheme based on 3D geodesic distances, using the connectivity of the depthmap.
 This algorithm is decomposed into two steps : 
+
 \begin{itemize}
 	\item Computing a voronoi diagram, determining for each site $s_i$ the closest points from $s_i$ to any other site.
-	\item Moving the position of each site $s$
+	\item Integrating each cell of the Voronoi diagram and computing its centroid.
+	\item Moving the position of each site $s$ with respect to the centroid computed for its cell.
 \end{itemize}
 
 Those steps are repeated until the sites stop moving (in practice, the process is stopped when the mean displacement is below a given threshold).
@@ -485,9 +487,9 @@ By doing so, we always project newly inserted vertices onto original ones (the o
 
 \section{Results}
 
-\arnaud{ADD RESULTS ABOUT COMPARISON WITH RESPECT TO RESOLUTION LEVELS (HAUSDORFF)}
-\arnaud{ADD RESULTS ABOUT COMPARISON WITH RESPECT TO NUMBER OF ITERATIONS (HAUSDORFF + TRIANGLE QUALITY)}
-\arnaud{ADD RESULTS ABOUT COMPARISON BETWEEN SEVERAL MESH RECONSTRUCTION ALGORITHMS (HAUSDORFF + VISUAL QUALITY)}
+\arnaud{ADD RESULTS ABOUT COMPARISON WITH RESPECT TO RESOLUTION LEVELS (HAUSDORFF)}\\
+\arnaud{ADD RESULTS ABOUT COMPARISON WITH RESPECT TO NUMBER OF ITERATIONS (HAUSDORFF + TRIANGLE QUALITY)}\\
+\arnaud{ADD RESULTS ABOUT COMPARISON BETWEEN SEVERAL MESH RECONSTRUCTION ALGORITHMS (HAUSDORFF + VISUAL QUALITY)}\\
 \arnaud{ADD RESULTS ABOUT COMPARISON BETWEEN COMBINATION OF MESH RECONSTRUCTION ALGORITHM + REMESHING (HAUSDORFF + VISUAL QUALITY + EXECUTION TIME)}
 
 \section{Conclusion}
