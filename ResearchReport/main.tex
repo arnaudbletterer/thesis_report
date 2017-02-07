@@ -100,6 +100,11 @@
 %	CHAPTER 2
 %----------------------------------------------------------------------------------------
 
+\chapter{Point Cloud Poisson Disks Sampling}
+
+This chapter presents results of a method to sample point clouds with a fixed minimum spacing of points.
+This method uses a depthmap as a graph to compute approximations of geodesics disks, and transmit the sampling information between multiple depthmaps to sample a point cloud composed of a set of depthmaps.
+
 \chapter{Semi-regular Surface Reconstruction}
 
 This chapter explains a new method in surface reconstruction, based on the original data coming from many 3D scanners, namely depthmaps.
@@ -140,16 +145,16 @@ Using Equation\eqref{eq:spherical_to_cartesian}, it is possible to recover 3D po
 \section{Introduction}
 \label{sec:introduction}
 
-Nowadays, point clouds acquired by 3D scanners are consituted by hundreds of million of points, even just in a single scan.
+Nowadays, point clouds acquired by 3D scanners are consituted of hundreds of million of points, even just in a single scan.
 Acquired surfaces are generally oversampled, and manipulating such amount of data becomes a challenging problem, even just for direct visualization.
-Hence, simplification of such data becomes compulsory in order be efficiently managed.
+Hence, efficient simplification of such data becomes compulsory in order be correctly managed.
 
 \section{Related work}
 \label{sec:related_work}
 
 To solve the interactive visualization and compression problems of highly detailed meshes, one common approach considered consists in modifying the connectivity of the reconstructed mesh, to obtain a progressive representation of the surface, that will be refined or coarsened depending on the point of view of the observer in the scene visualized.
 To do so, a category of methods consists into a re-triangulation of the mesh, in order to obtain an \textit{implicit connectivity}. 
-After obtaining a coarse approximation of an original mesh, which is called the base mesh, triangles of this mesh are recursively subdivided and newly inserted points are projected on the surface.
+After obtaining a coarse approximation of an original mesh, which is called the base mesh, triangles of this mesh are recursively subdivided and newly inserted points are projected onto the surface.
 The obtained connectivity is implicit in the way that the only connectivity to store for the whole mesh is the one of the base mesh, the rest of the connectivity is obtained by a recursive subdivision of the triangles.
 A survey has recently been done to categorize the different semi-regular remeshing methods in \cite{PRS15}.
 
@@ -166,7 +171,8 @@ Considering all of those aspects, we oriented our work into reconstructing a sem
 Many 3D acquisition devices do not only provide a 3D point cloud at the output of an acquisition. 
 They can also provide 2D parameterizations of a scene from the point of view of a scanner during the acquisition process, in the form of a depthmap (Figure \ref{fig:depthmap_point_cloud}(a)).
 
-Depthmaps are 2D images, where each pixel represent a point in the scene acquired. This particular structure offers a natural connectivity through the point cloud, where neighboring pixels represent neighboring points on the acquired surface.
+Depthmaps are 2D images, where the intensity of each pixel represent the distance of a point in the scene acquired.
+Due to the way 3D scanners acquire 3D scenesThis particular structure offers a natural connectivity through the point cloud, where neighboring pixels represent neighboring points on the acquired surface.
 Taking this information in consideration, it seems natural to consider this connectivity when it comes to reconstruct the surface underlying the point cloud. 
 In this method, we show a method to reconstruct a progressive surface, taking as an input a depthmap and a parametrization function, and producing a semi-regular mesh.
 The particularities of the method is that every step is applied in the parametric domain, which simplifies most of the algorithms applied, and the surface is only embed in 3D at the end of the algorithm, using the associated parametrization function.
@@ -177,7 +183,6 @@ The particularities of the method is that every step is applied in the parametri
 \caption{Example of a depthmap (a) (darker colors represent closer points to the scanner) and the point cloud representing the embedding of the depthmap in 3D (b) (normals have been computed to enhance the visualization).}
 \label{fig:depthmap_point_cloud}
 \end{figure}
-
 
 \section{General overview}
 \label{sec:general_overview}
@@ -190,6 +195,7 @@ Figure \ref{fig:general_steps} represents the different steps of our method used
 \label{fig:general_steps}
 \end{figure}
 
+A priori to everything, borders are detected to identify depth discontinuities (separating 2 surface areas in 3D) and each border is labeled independently.
 A Poisson-disk sampling is applied on the depthmap (Section \ref{sec:poisson_sampling}) that will generate the initial sites for a Lloyd relaxation procedure (Section \ref{sec:lloyd_relaxation}). 
 Then the obtained Voronoi diagram will be transformed into a 2D triangulation, considering an altered dual representation (taking into account parts identified of the depthmap where two neighboring pixels represent points on different surface areas (Section \ref{sec:border_marking})). 
 Finally, from this 2D triangulation, different levels of resolution are reconstructed using a 1-to-4 face subdivision approach (Section \ref{sec:surface_subdivision}).
@@ -204,7 +210,7 @@ This link between depth values and 3D coordinates motivated us using depthmaps a
 
 If most of the time it is correct to consider that neighboring pixels in a depthmap are also neighbors on the surface (with respect to the sampling density of the acquisition), it is not the case along depth discontinuities (Fig \ref{fig:depth_discontinuity}).
 Since an acquisition is done from a specific position and orientation, it can only represent visible points from that specific point of view. 
-Thus many surface areas can be occluded, and different surface areas could be considered touching each other in the depthmap, even if they are far on the surface.
+Thus many surface areas can be occluded, and different surface areas could be considered "touching" each other in the depthmap, even if they are far on the surface.
 
 To avoid this, we present a method to mark the borders, identify each of them uniquely and store the path from the beginning until the end of each border.
 
@@ -214,11 +220,11 @@ In our case, we want not only to detect borders, but also to store the path that
 \begin{figure}
 \centering
 \scalebox{0.05}{
-\begin{tikzpicture}[spy using outlines={circle,red,magnification=10,size=50cm, connect spies}]
+\begin{tikzpicture}[spy using outlines={circle, red, magnification=10, size=50cm, connect spies}]
 \node {\pgfimage{Images/DepthMap-Garuda}};
 \spy on (5,-1) in node [left] at (100,0);
 \end{tikzpicture}
-\begin{tikzpicture}[spy using outlines={circle,red,magnification=10,size=50cm, connect spies}]
+\begin{tikzpicture}[spy using outlines={circle, red, magnification=10, size=50cm, connect spies}]
 \node {\pgfimage{Images/Borders-Garuda}};
 \spy on (5,-1) in node [left] at (100,0);
 \end{tikzpicture}
