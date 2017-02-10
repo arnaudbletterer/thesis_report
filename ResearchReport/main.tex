@@ -250,23 +250,8 @@ But instead of using a fixed threshold over the entire depthmap, we consider a v
 This comes from the fact that 3D scanners acquire a higher density of points when objects are closer than when they are further. 
 Thus by weighting a chosen threshold with pixel intensities, we are able to have a threshold that will vary with respect to the depth, i.e it will be smaller for high density areas, and bigger for low density areas.
 
-To understand how the threshold is weighted, it is interesting to take a look at the distance variation between the embedding of two specific pixels when their depth progressively increases (Figure \ref{fig:distance_depth_variation}).
-
-\begin{figure}[ht]
-  \centering
-  \def\svgwidth{200pt}
-  \input{Images/ThresholdVariation.pdf_tex}
-  \caption{Distance variation between two points at the same depth, by progressively increasing their depth.}
-  \label{fig:distance_depth_variation}
-\end{figure}
-
-From the "side-splitter theorem", we know that since $BE$ is parallel to $CD$ then we have :
-
-\begin{equation}
-	\frac{|AB|}{|AC|} = \frac{|BE|}{|CD|},
-\end{equation}
-
-and that the distance between two specific points linearly increases when their depth increases. Thus the intensity threshold should be linearly proportional to the depth.
+To understand how the threshold is weighted, it important to remember that the distance between two specific points increases when their depth increases.
+However it doesn't 
 
 \subsection{Border labeling and routing}
 Now that borders have been indentified, we need to label them in order to be able to consider them independently. 
@@ -369,18 +354,17 @@ This method works as a recursive process.
 At the beginning, every site $v_i$ marks the pixel it is lying on and the pixels in the 1-ring neighborhood of that pixel as being part of the Voronoi cell $V_S(v_i)$ of the site $v_i$ if their distance to that pixel is closer than any other site $v_j, j \neq i$ and marked as "ready" to propagate.
 Throughout the algorithm every pixel will store its accumulated distance from the site of the Voronoi cell it belongs to. 
 At the initialization this distance is set to infinity for every valid pixel of the depthmap, and set to 0 for every non-valid pixel.
-This defines the domain of the Voronoi diagram computation, which is limited to the 
 
 Every pixel marked $p$ will check its 1-ring neighborhood and for every neighbor $p_i$, if the currently stored distance for $p_i$ $d(p_i)$ is superior to the distance stored at $p$ plus the 3D euclidian distance between $p$ and $p_i$. 
 If it is the case, $p_i$ will be considered as belonging to the same cell as $p$, its stored distance being updated accordingly and it is marked as "ready" to propagate its ownership.
 
-The algorithm stops when no pixel is marked anymore.
+The algorithm stops when no pixel is marked as needing visitation anymore.
 
 \arnaud{ADD FIGURE COMPARISON DISTANCE METRICS VORONOI (GEODESIC, EUCLIDEAN 2D)}
 
 \subsubsection{Voronoi diagram verifications}
 In \cite{Gus07}, verifications have been added in order to ensure that a Voronoi partition was generating a manifold mesh.
-He suggested to verify 5 different topological conditions over the configurations of Voronoi tiles (Figure \ref{fig:voronoi_conditions}) : 
+This work suggested to verify 5 different topological conditions over the configurations of Voronoi tiles (Figure \ref{fig:voronoi_conditions}) : 
 \begin{itemize}
 	\item \textit{Encrouched boundaries}. A Voronoi tile that touches a surface boundary has to have its seed on that boundary. 
 	If this condition fails a new seed is introduced on the boundary of the surface within the current tile
@@ -443,9 +427,10 @@ In our discrete case (where the domain is a depthmap), the integral can be re-wr
 
 \section{Surface triangulation}
 \label{sec:surface_triangulation}
-Before triangulating, we need to define whether Voronoi cells belong to the same neighborhood (same surface area) or not. In comparison to the typical Delaunay dual-triangulation obtained from the Voronoi diagram, here we don't want to connect by an edge every pair of Voronoi cells having a common frontier in 2D. Some cells belong to different surface areas and then shouldn't be linked together.
+Before triangulating, we need to define whether Voronoi cells belong to the same neighborhood (same surface area) or not. 
+In comparison to the typical Delaunay dual-triangulation obtained from the Voronoi diagram, here we don't want to connect by an edge every pair of Voronoi cells having a common frontier in 2D. Some cells belong to different surface areas and then shouldn't be linked together.
 For this we will use the borders that were constructed in \ref{sec:border_marking}.
-We consider that two Voronoi cells $V_i$ and $V_j$ are belonging to the same neighborhood if there is no border separating them, meaning that there exists a non-empty set of non-border pixels belonging to $V_i$ which are neighbor (considering the 6-neighborhood we defined) to at least 1 pixel of the pixels belonging to $V_j$.
+We consider that two Voronoi cells $V_i$ and $V_j$ are belonging to the same neighborhood if there is no border separating them, meaning that there exists at least one non-border pixel belonging to $V_i$ which is a neighbor (considering the 6-neighborhood we defined in Fig. \ref{fig:pixel_neighborhood}) to at least 1 pixel of the pixels belonging to $V_j$.
 
 \begin{figure}[ht]
 \centering
@@ -473,6 +458,16 @@ This allow to generate a triangulation where only points belonging to the same s
 \arnaud{Add a close-up view of triangulation considering borders}
 
 \arnaud{ADD ILLUSTRATION TRIANGULATION WITH/WITHOUT CONSIDERING BORDERS}
+
+In order to avoid creating triangles with a bad aspect ratio (Figure ...) next to the borders of detected (due to the position of Voronoi cells sites, being the projection of the centroid on the detected border of the cell), we need to add extra sites to the Voronoi diagram, close to those regions
+
+\begin{figure}[ht]
+\centering\includegraphics[scale=0.1]{Triangles-WellShaped-TechShop}
+\centering\includegraphics[scale=0.1]{Triangles-NotWellShaped-TechShop}
+\caption{Parts of the triangulation of the TechShop with more (right image) or less (left image) well-shaped triangles. 
+Colors vary from blue to red, from equilateral to skinny triangles.}
+\label{fig:voronoi_diagram_triangulation}
+\end{figure}
 
 \section{Surface subdivision}
 \label{sec:surface_subdivision}
