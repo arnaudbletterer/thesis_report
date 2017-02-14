@@ -482,7 +482,24 @@ For the subdivision we consider two different cases :
 \end{itemize}
 
 The subdivision process is done in the 2D domain, this means that newly inserted vertices are given a position in 2D, and their 3D position is recovered by embedding the pixel on which the new vertex is lying on.
-By doing so, we always project newly inserted vertices onto original ones (the ones that have been acquired), which are on the surface acquired.
+By doing so, we always project newly inserted vertices onto original ones (points having been acquired), which are on the surface acquired.
+
+By using the implicit connectivity of the structure provided by depthmap, it is possible obtain a finer representation of the surface, by interpolating values.
+Interpolation coefficients are computed similarly as when dealing with classical images (since the structure is similar to the one of an image).
+In order to avoid interpolating problems, when it comes to interpolate edges in images, we use the detected borders to modify the interpolation scheme used to never interpolate between two surface areas that are not next to each other.
+
+For example, in our case we decided to us a bilinear filtering scheme, that we modified depending on the configuration of the neighborhood (Figure ...) :
+\begin{itemize}
+	\item If 
+\end{itemize}
+
+\begin{figure}[ht]
+\centering
+\def\svgwidth{\columnwidth}
+\input{Images/BilinearInterpolation.pdf_tex}
+\caption{Configuration}
+\label{fig:bilinear_interpolation}
+\end{figure}
 
 \arnaud{ADD ILLUSTRATION SUBDIVISION ON A BORDER}
 
@@ -490,7 +507,8 @@ By doing so, we always project newly inserted vertices onto original ones (the o
 
 \arnaud{ADD RESULTS ABOUT COMPARISON WITH RESPECT TO RESOLUTION LEVELS (HAUSDORFF)}\\
 \arnaud{ADD RESULTS ABOUT COMPARISON WITH RESPECT TO NUMBER OF ITERATIONS (HAUSDORFF + TRIANGLE QUALITY)}\\
-\arnaud{ADD RESULTS ABOUT COMPARISON BETWEEN SEVERAL MESH RECONSTRUCTION ALGORITHMS (HAUSDORFF + VISUAL QUALITY)}\\
+\arnaud{ADD RESULTS ABOUT COMPARISON WITH RESPECT TO SCAN RESOLUTION (HAUSDORFF)}\\
+\arnaud{ADD RESULTS ABOUT COMPARISON BETWEEN SEVERAL MESH RECONSTRUCTION ALGORITHMS (HAUSDORFF + VISUAL QUALITY + EXECUTION TIME)}\\
 \arnaud{ADD RESULTS ABOUT COMPARISON BETWEEN COMBINATION OF MESH RECONSTRUCTION ALGORITHM + REMESHING (HAUSDORFF + VISUAL QUALITY + EXECUTION TIME)}
 
 \section{Conclusion}
