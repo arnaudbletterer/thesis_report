@@ -1,0 +1,9 @@
+%!TEX root = ../main.tex
+
+\section{Conclusion}
+
+We presented a new method to reconstruct a surface from a point cloud, in the form of a depthmap. 
+By taking advantage of the implicit connectivity between pixels of a depthmap (which represents points that have been acquired), we are able to recover the surface underlying the point cloud.
+This implicit connectivity also allows to approximate geodesics through the point cloud, by considering the depthmap as a graph, where edges are weighted by the 3D euclidean distance of neighboring points.
+Using that, a surfacic Voronoi diagram can be computed, whose dual representation creates a base mesh, a coarse approximation of the point cloud.
+By recursively sudviding triangles of this mesh, we generate a progressive structure allowing to display a mesh at different levels of resolution.
