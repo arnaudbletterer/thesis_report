@@ -37,7 +37,10 @@ This allow to generate a triangulation where only points belonging to the same s
 
 \arnaud{ADD ILLUSTRATION TRIANGULATION WITH/WITHOUT CONSIDERING BORDERS}
 
-In order to avoid creating triangles with a bad aspect ratio (Figure ...) next to the borders of detected (due to the position of Voronoi cells sites, being the projection of the centroid on the detected border of the cell), we need to add extra sites to the Voronoi diagram, close to those regions
+In order to avoid creating triangles with a bad aspect ratio (Figure ...) next to the borders of detected (due to the position of Voronoi cells sites, being the projection of the centroid on the detected border of the cell), we need to add extra sites to the Voronoi diagram, close to those regions to give triangles in this area a better aspect ratio.
+
+For this we decide to add a site on the barycenter of each triangle whose minimum angle is below a certain threshold $\alpha$. 
+This parameter will ensure that all the triangles of the mesh have no angles below this value $\alpha$.
 
 \begin{figure}[ht]
 \centering\includegraphics[scale=0.1]{Triangles-WellShaped-TechShop}

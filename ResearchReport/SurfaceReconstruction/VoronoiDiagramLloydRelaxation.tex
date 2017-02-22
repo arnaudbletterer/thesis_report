@@ -83,7 +83,7 @@ Each Voronoi cell can be in two different configurations :
 	In this configuration, the cell's site is moved to the orthogonal projection of the centroid of the cell on the border of the cell.
 \end{itemize}
 
-The centroid $z_i^*$ of the Voronoi cell $V_i$ can be obtained using the following integral :
+The new position of the  $z_i^*$ of the Voronoi cell $V_i$ can be obtained using the following integral :
 
 \begin{equation}
 		z_i^* = \begin{cases}
@@ -100,4 +100,4 @@ In our discrete case (where the domain is a depthmap), the integral can be re-wr
 		Proj_{B_{V_i}}(\frac{\sum_{p_j \in V_S(v_i)} p_j\rho(p_j)}{\sum_{p_j \in V_S(v_i)} \rho(p_j)}) , & \text{if $|B_{V_i}| > 0$}, \\
 		\frac{\sum_{p_j \in V_S(v_i)} p_j\rho(p_j)}{\sum_{p_j \in V_S(v_i)} \rho(p_j)}, & \text{otherwise}, 
 		\end{cases}
-\end{equation}
+\end{equation} 
